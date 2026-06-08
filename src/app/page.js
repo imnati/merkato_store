@@ -1,65 +1,256 @@
-import Image from "next/image";
+"use client";
+import React, { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import DynamicNavbar from "@/components/DynamicNavbar";
+import DynamicFooter from "@/components/DynamicFooter";
+import ProductCard from "@/components/ProductCard";
+import { useAppEngine } from "@/context/AppContext";
+import { useTranslationEngine } from "@/context/LanguageContext";
+import Link from "next/link";
 
-export default function Home() {
+function HomepageContent() {
+  const {
+    products,
+    cart,
+    addToCart,
+    updateCartQty,
+    removeFromCart,
+    activeRegion,
+  } = useAppEngine();
+  const { t } = useTranslationEngine();
+  const router = useRouter();
+
+  const searchParams = useSearchParams();
+  const searchFilter = searchParams.get("search") || "";
+
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const AVAILABLE_CATEGORIES = [
+    { id: "All", enLabel: "All Products", arLabel: "جميع المنتجات" },
+    { id: "Electronics", enLabel: "Electronics", arLabel: "الإلكترونيات" },
+
+    {
+      id: "Fashion & clothing",
+      enLabel: "Fashion & Clothing",
+      arLabel: "الأزياء والملابس",
+    },
+    { id: "Groceries", enLabel: "Groceries", arLabel: "البقالة" },
+    {
+      id: "Beauty products",
+      enLabel: "Beauty Products",
+      arLabel: "منتجات التجميل",
+    },
+    {
+      id: "Household items",
+      enLabel: "Household Items",
+      arLabel: "المستلزمات المنزلية",
+    },
+    { id: "Accessories", enLabel: "Accessories", arLabel: "الإكسسوارات" },
+  ];
+
+  const normalizeToken = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]/g, "");
+  };
+
+  // 🔍 Multi-Tier Filtering Logic Loop
+  const processedFilteredProducts = (products || []).filter((p) => {
+    const matchesSearch =
+      p?.name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      false ||
+      p?.brand?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      false;
+
+    const matchesCategory =
+      activeCategory === "All" || p?.category === activeCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalCost = (cart || []).reduce(
+    (sum, item) => sum + (item.activePrice || item.price || 0) * item.quantity,
+    0,
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
+    <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+      {/* Platform Navigation Header Strip */}
+      <DynamicNavbar />
+
+      {/* Main Structural Viewport Grid Frame */}
+      <main className="max-w-[1400px] mx-auto px-4 py-8 w-full sm:px-6 lg:px-8 grow space-y-8">
+        {/* 🔥 PROMOTION BANNER */}
+        <section className="bg-gradient-to-r from-[#0D1E3A] via-[#112952] to-[#0A172E] rounded-3xl p-12 text-center text-white shadow-xl border border-slate-800 animate-fade-in">
+          <h1 className="text-3xl font-black sm:text-4xl md:text-5xl tracking-tight leading-tight font-mono uppercase">
+            {t.subtitle || "Pan-African & Middle East Marketplace"}
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        </section>
+
+        {/* 📋 INTERACTIVE CATEGORY BROWSING BAR */}
+        <div className="bg-white border border-gray-100 rounded-2xl p-2.5 shadow-sm overflow-x-auto custom-scrollbar flex items-center gap-1.5 scroll-smooth">
+          {AVAILABLE_CATEGORIES.map((cat) => {
+            const isCurrentlySelected =
+              normalizeToken(activeCategory) === normalizeToken(cat.id);
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  // Explicit State Mutation
+                  setActiveCategory(cat.id);
+                  if (searchFilter) router.push("/");
+                }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap mobile-touch-optimal border ${
+                  isCurrentlySelected
+                    ? "bg-slate-900 text-white border-transparent shadow-md scale-[1.01]"
+                    : "bg-white text-gray-500 border-gray-100 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                {t.lang === "ar" ? cat.arLabel : cat.enLabel}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* DUAL-COLUMN LAYOUT MATRIX WORKSPACE */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* ✅ LEFT REGION (75% Width) - Explicit state key forced injection to break caching loops */}
+          <div
+            key={activeCategory}
+            className="lg:col-span-9 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 animate-fade-in"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {processedFilteredProducts.length === 0 ? (
+              <div className="col-span-full py-20 text-center text-sm font-semibold text-gray-400 bg-white border border-dashed border-gray-200 rounded-2xl p-4 shadow-inner">
+                ⚠️ በምድብ &quot;
+                <span className="text-orange-600 font-bold uppercase">
+                  {activeCategory}
+                </span>
+                &quot; ስር የተመዘገበ ምንም አይነት እቃ አልተገኘም።
+              </div>
+            ) : (
+              processedFilteredProducts.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onAddToCart={addToCart}
+                  symbol={activeRegion?.symbol || "د.إ"}
+                />
+              ))
+            )}
+          </div>
+
+          {/* RIGHT REGION (25% Width): PERSISTENT INLINE BASKET SUMMARY SIDEBAR */}
+          <aside className="lg:col-span-3 bg-white p-5 border border-gray-100 rounded-2xl shadow-sm space-y-4 lg:sticky lg:top-28">
+            <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-2 tracking-wider font-mono">
+              🛒 {t.basketTitle || "Basket Summary"}
+            </h3>
+
+            {cart.length === 0 ? (
+              <div className="text-center py-10 text-gray-400 space-y-1">
+                <span className="text-2xl block">📥</span>
+                <p className="text-xs font-semibold">Basket is empty.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-gray-50 custom-scrollbar text-xs">
+                  {cart.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between font-semibold pt-3 first:pt-0 gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="font-bold text-slate-800 truncate"
+                          title={item.name}
+                        >
+                          {item.name}
+                        </p>
+                        <p className="text-gray-400 font-mono text-[10px] mt-0.5 font-bold">
+                          {activeRegion?.symbol || "د.إ"}
+                          {(
+                            (item.activePrice || item.price || 0) *
+                            item.quantity
+                          ).toFixed(2)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (item.quantity <= 1) {
+                              removeFromCart(item.id);
+                            } else {
+                              updateCartQty(item.id, item.quantity - 1);
+                            }
+                          }}
+                          className="bg-gray-100 px-2 py-0.5 rounded-md font-bold text-gray-500 hover:bg-gray-200 transition-colors"
+                        >
+                          -
+                        </button>
+                        <span className="font-bold font-mono px-0.5 min-w-[12px] text-center text-slate-800">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateCartQty(item.id, item.quantity + 1)
+                          }
+                          className="bg-gray-100 px-2 py-0.5 rounded-md font-bold text-gray-500 hover:bg-gray-200 transition-colors"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-400 hover:text-red-600 font-bold ml-1"
+                          title="Remove item"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-3 border-t border-gray-100 bg-slate-50/80 p-3 rounded-xl flex items-baseline justify-between text-xs font-black text-slate-900">
+                  <span>{t.totalEst || "Estimated Total"}:</span>
+                  <span className="text-emerald-600 font-mono text-sm font-black">
+                    {activeRegion?.symbol || "د.إ"}
+                    {totalCost.toFixed(2)}
+                  </span>
+                </div>
+
+                <Link
+                  href="/checkout"
+                  className="w-full text-center block bg-orange-600 hover:bg-orange-700 text-white text-xs font-black py-3.5 rounded-xl uppercase tracking-wider font-mono shadow transition-all active:scale-[0.99]"
+                >
+                  {t.checkoutBtn || "Proceed to Checkout"}
+                </Link>
+              </div>
+            )}
+          </aside>
         </div>
       </main>
+
+      <DynamicFooter />
     </div>
+  );
+}
+
+export default function HomepageFeed() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-xs font-mono text-slate-400 animate-pulse">
+          Loading Marketplace Interface Pipeline...
+        </div>
+      }
+    >
+      <HomepageContent />
+    </Suspense>
   );
 }
