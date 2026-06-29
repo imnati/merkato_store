@@ -36,9 +36,13 @@ export default function DynamicNavbar() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    requestAnimationFrame(() => {
+    // requestAnimationFrame(() => {
+    //   setMounted(true);
+    // });
+    const handle = requestAnimationFrame(() => {
       setMounted(true);
     });
+    return () => cancelAnimationFrame(handle);
   }, []);
 
   const currentT = t || {};
@@ -63,6 +67,7 @@ export default function DynamicNavbar() {
 
   const handleSaveLocation = (e) => {
     e.preventDefault();
+    console.log("Saving new region code:", tempRegionCode);
     updateRegionSelection(tempRegionCode);
     setLocationDropdownOpen(false);
   };
