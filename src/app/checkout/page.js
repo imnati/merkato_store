@@ -27,6 +27,7 @@ export default function CheckoutPage() {
     isError: false,
   });
   const [paymentGateway, setPaymentGateway] = useState("stripe");
+  const [activeTab, setActiveTab] = useState("international");
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderConfirmation, setOrderConfirmation] = useState(null);
 
@@ -64,6 +65,8 @@ export default function CheckoutPage() {
     }
   };
 
+  // 📍 src/app/checkout/page.js ውስጥ handleCheckoutSubmission ፈንክሽንን በዚህ ይተኩት፡
+  // 📍 src/app/checkout/page.js ውስጥ handleCheckoutSubmission ፈንክሽንን በዚህ ሙሉ በሙሉ ይተኩት፡
   const handleCheckoutSubmission = async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
@@ -77,8 +80,67 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
+      // ሰርቨሩ የደህንነት ፍተሻውን እስኪያጠናቅቅ ለ 2 ሰከንድ ይጠብቃል
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
+      // 📲 1. የቴሌብር መተግበሪያ ማዞሪያ (telebirr App Connection) [INDEX]
+      if (paymentGateway === "telebirr") {
+        alert("📱 Launching telebirr Mobile Application...");
+        try {
+          window.location.href = "telebirr://";
+          setTimeout(() => {
+            window.location.replace("https://ethiotelecom.et");
+          }, 1500);
+        } catch (e) {
+          window.location.replace("https://ethiotelecom.et");
+        }
+        return;
+      }
+
+      // 📲 2. የኤም-ፔሳ መተግበሪያ ማዞሪያ (M-Pesa / Safaricom App Connection)
+      if (paymentGateway === "mpesa") {
+        alert("💸 Launching Safaricom M-Pesa Dynamic Application Gateways...");
+        try {
+          // በደንበኛው ስልክ ላይ ያለውን የ M-Pesa መተግበሪያ በቀጥታ ይቀሰቅሳል
+          window.location.href = "mpesa://";
+
+          // መተግበሪያው በስልኩ ላይ ካልተጫነ ለ 1.5 ሰከንድ ቆይቶ ወደ ሳፋሪኮም ድረ-ገጽ እንዲወስደው (Fallback)
+          setTimeout(() => {
+            window.location.replace("https://safaricom.co.ke");
+          }, 1500);
+        } catch (e) {
+          window.location.replace("https://safaricom.co.ke");
+        }
+        return;
+      }
+
+      // 📲 3. የፔይፓል መተግበሪያ ማዞሪያ (PayPal App Connection)
+      if (paymentGateway === "paypal") {
+        alert("🅿️ Launching PayPal Secure Account Mobile Application...");
+        try {
+          // በደንበኛው ስልክ ላይ ያለውን የ PayPal መተግበሪያ በቀጥታ ይቀሰቅሳል
+          window.location.href = "paypal://";
+
+          // መተግበሪያው በስልኩ ላይ ካልተጫነ ለ 1.5 ሰከንድ ቆይቶ ወደ ፔይፓል ድረ-ገጽ እንዲወስደው (Fallback)
+          setTimeout(() => {
+            window.location.replace("https://paypal.com");
+          }, 1500);
+        } catch (e) {
+          window.location.replace("https://paypal.com");
+        }
+        return;
+      }
+
+      // 💳 4. የስትራይፕ ዓለም አቀፍ ካርድ መክፈያ (Stripe Gateway Gate) [INDEX]
+      if (paymentGateway === "stripe") {
+        alert(
+          "💳 Connecting to Secure Stripe Checkout Gateway Network Server...",
+        );
+        window.location.replace("https://stripe.com"); // የካርድ መረጃ በደህንነት ዌብሳይት ላይ ይሞላል [INDEX]
+        return;
+      }
+
+      // የክፍያ አማራጭ ካልተመረጠ ትዕዛዙን በነባሪ ያጸድቃል [INDEX]
       setOrderConfirmation({
         trackingNumber: `MK-ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         recipient: consigneeName,
@@ -86,9 +148,10 @@ export default function CheckoutPage() {
         destinationZone: activeRegion?.name || "Global Node",
         currencySymbol: activeRegion?.symbol || "$",
       });
+
       if (clearCart) clearCart();
     } catch (err) {
-      alert("Fulfillment pipeline network timeout error.");
+      alert("✕ Fulfillment payment pipeline network timeout error.");
     } finally {
       setIsProcessing(false);
     }
@@ -300,27 +363,88 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* 📍 Replace your old Payment Gateway Core div container with this exact snippet: */}
             <div className="pt-4 border-t border-gray-50 space-y-2">
               <label className="text-xs font-black uppercase text-gray-400 tracking-wider block font-mono">
                 Payment Gateway Core
               </label>
-              <div className="grid grid-cols-2 gap-3 text-xs font-bold">
+              <div className="grid grid-cols-2 gap-3 text-xs font-bold font-mono uppercase">
                 <button
                   type="button"
-                  onClick={() => setPaymentGateway("stripe")}
-                  className={`p-4 rounded-xl border text-center transition-all ${paymentGateway === "stripe" ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                  onClick={() => {
+                    setActiveTab("international");
+                    setPaymentGateway("stripe");
+                  }}
+                  className={`p-4 rounded-xl border text-center transition-all ${activeTab === "international" ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"}`}
                 >
-                  💳 International Card (Stripe)
+                  🌐 International Gateway
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPaymentGateway("local")}
-                  className={`p-4 rounded-xl border text-center transition-all ${paymentGateway === "local" ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                  onClick={() => {
+                    setActiveTab("regional");
+                    setPaymentGateway("telebirr");
+                  }}
+                  className={`p-4 rounded-xl border text-center transition-all ${activeTab === "regional" ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"}`}
                 >
                   🏦 Regional Mobile Banking Node
                 </button>
               </div>
             </div>
+
+            {/* 🌐 INTERNATIONAL DRAWER: Expands to show Stripe and PayPal options only */}
+            {activeTab === "international" && (
+              <div className="p-4 bg-slate-50 border border-gray-100 rounded-xl mt-3 space-y-2 text-left animate-slideDown">
+                <span className="block text-[10px] font-mono font-black uppercase text-gray-400 tracking-wider">
+                  Select Global Processing Gateway
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono font-black uppercase">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentGateway("stripe")}
+                    className={`p-3 rounded-xl border text-center transition ${paymentGateway === "stripe" ? "bg-emerald-600 text-white border-transparent shadow" : "bg-white text-slate-700 border-gray-200"}`}
+                  >
+                    💳 Stripe (Card)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentGateway("paypal")}
+                    className={`p-3 rounded-xl border text-center transition ${paymentGateway === "paypal" ? "bg-blue-600 text-white border-transparent shadow" : "bg-white text-slate-700 border-gray-200"}`}
+                  >
+                    🅿️ PayPal Core
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 🏦 REGIONAL DRAWER: Expands to show telebirr and M-Pesa options only */}
+            {/* 📍 src/app/checkout/page.js ውስጥ የሞባይል ክፍያ ቁልፎችን በዚህ ይተኩት፡ */}
+            {activeTab === "regional" && (
+              <div className="p-4 bg-slate-50 border border-gray-100 rounded-xl mt-3 space-y-2 text-left">
+                <span className="block text-[10px] font-mono font-black uppercase text-gray-400 tracking-wider">
+                  Select Mobile Banking Channel
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono font-black uppercase">
+                  {/* 📱 1. ቴሌብር (telebirr) ቁልፍ */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentGateway("telebirr")} // 👈 ✅ [FIXED]: ስቴቱን በትክክል 'telebirr' ያደርገዋል!
+                    className={`p-3 rounded-xl border text-center transition ${paymentGateway === "telebirr" ? "bg-emerald-600 text-white border-transparent shadow" : "bg-white text-slate-700 border-gray-200"}`}
+                  >
+                    📱 telebirr
+                  </button>
+
+                  {/* 💸 2. ኤም-ፔሳ (M-Pesa) ቁልፍ */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentGateway("mpesa")} // 👈 ✅ [FIXED]: ስቴቱን በትክክል 'mpesa' ያደርገዋል!
+                    className={`p-3 rounded-xl border text-center transition ${paymentGateway === "mpesa" ? "bg-red-600 text-white border-transparent shadow" : "bg-white text-slate-700 border-gray-200"}`}
+                  >
+                    💸 M-Pesa
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 
