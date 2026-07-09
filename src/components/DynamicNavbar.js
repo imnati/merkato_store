@@ -295,7 +295,13 @@ export default function DynamicNavbar() {
                 suppressHydrationWarning={true}
                 className="relative flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs transition shadow-xs cursor-pointer"
               >
-                <span>🛒<span className="hidden sm:inline"> {currentT?.basketTitle || "Basket Summary"}</span></span>
+                <span>
+                  🛒
+                  <span className="hidden sm:inline">
+                    {" "}
+                    {currentT?.basketTitle || "Basket Summary"}
+                  </span>
+                </span>
                 <span className="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center">
                   {totalBasketUnits}
                 </span>
