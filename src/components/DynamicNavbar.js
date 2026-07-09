@@ -80,7 +80,7 @@ export default function DynamicNavbar() {
   };
 
   const displayBrand = (
-    <span className="text-xl font-black tracking-tight sm:text-2xl font-mono shrink-0 select-none">
+    <span className="text-sm font-black tracking-tight sm:text-xl lg:text-2xl font-mono shrink-0 select-none">
       {!mounted ? (
         <>
           <span className="text-orange-600">MERKATO</span>{" "}
@@ -293,9 +293,9 @@ export default function DynamicNavbar() {
               <Link
                 href="/cart"
                 suppressHydrationWarning={true}
-                className="relative flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-xs cursor-pointer"
+                className="relative flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs transition shadow-xs cursor-pointer"
               >
-                <span>🛒 {currentT?.basketTitle || "Basket Summary"}</span>
+                <span>🛒<span className="hidden sm:inline"> {currentT?.basketTitle || "Basket Summary"}</span></span>
                 <span className="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center">
                   {totalBasketUnits}
                 </span>
