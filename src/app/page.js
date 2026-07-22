@@ -142,7 +142,7 @@ function HomepageContent() {
             ) : (
               processedFilteredProducts.map((p) => (
                 <ProductCard
-                  key={p.id}
+                  key={p._id || p.id}
                   product={p}
                   onAddToCart={addToCart}
                   symbol={activeRegion?.symbol || "د.إ"}
@@ -170,7 +170,7 @@ function HomepageContent() {
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-gray-50 custom-scrollbar text-xs">
                   {cart.map((item) => (
                     <div
-                      key={item.id}
+                      key={item._id || item.id}
                       className="flex items-center justify-between font-semibold pt-3 first:pt-0 gap-2"
                     >
                       <div className="min-w-0 flex-1">
@@ -250,7 +250,7 @@ function HomepageContent() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {featuredProducts.map((p) => (
                 <ProductCard
-                  key={p.id}
+                  key={p._id || p.id}
                   product={p}
                   onAddToCart={addToCart}
                   symbol={activeRegion?.symbol}
@@ -269,7 +269,7 @@ function HomepageContent() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {discountedProducts.map((p) => (
-                <div key={p.id} className="relative">
+                <div key={p._id || p.id} className="relative">
                   <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
                     Sale
                   </div>
