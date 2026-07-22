@@ -21,8 +21,8 @@ export default function ProductCard({
     });
   }, []);
 
-  const { id, name, brand, price, discountPrice, sku, images, status } =
-    product;
+  const { id, _id, name, brand, price, discountPrice, sku, images, status } = product;
+  const productId = _id || id;
 
   // The logic now checks showDiscount prop AND validity
   const isDiscountValid =
@@ -105,7 +105,7 @@ export default function ProductCard({
           SKU: {sku || "MK-GEN-000"} | {brand || "Generic"}
         </p>
         <Link
-          href={`/products/detail/${id}`}
+          href={`/products/detail/${productId}`}
           className="text-xs font-bold text-slate-800 line-clamp-2 hover:text-emerald-600 transition-colors"
         >
           {getLocalizedName()}
