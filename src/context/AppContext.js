@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import api from "@/lib/axios";
 
 const AppContext = createContext();
 
@@ -235,28 +236,28 @@ export const TARGET_REGIONS = [
 export function AppProvider({ children }) {
   const [products, setProducts] = useState(MASTER_CATALOG_DATABASE);
 
-  const [cart, setCart] = useState(() => {
-    if (typeof window !== "undefined") {
-      const cachedCart = localStorage.getItem("MERKATO_CART");
-      return cachedCart ? JSON.parse(cachedCart) : [];
-    }
-    return [];
-  });
+  // Fetch products from backend, fall back to hardcoded if API is down
+  useEffect(() => {
+    api.get("/products")
+      .then((res) => setProducts(res.data))
+      .catch(() => setProducts(MASTER_CATALOG_DATABASE));
+  }, []);
 
-  const [activeRegion, setActiveRegion] = useState(() => {
-    if (typeof window !== "undefined") {
-      const cachedRegion = localStorage.getItem("MERKATO_REGION");
-      return cachedRegion ? JSON.parse(cachedRegion) : TARGET_REGIONS[3];
-    }
-    return TARGET_REGIONS[3];
-  });
+  const [cart, setCart] = useState([]);
+  const [activeRegion, setActiveRegion] = useState(TARGET_REGIONS[3]);
+  const [user, setUser] = useState(null);
 
-  const [user, setUser] = useState({
-    name: "Abebe Kebede",
-    email: "abebe@merkato.com",
-    role: "admin",
-    addresses: ["Dubai Marina, UAE", "Bole Sub-City, Addis Ababa, Ethiopia"],
-  });
+  // Load persisted data client-side only to avoid hydration mismatch
+  useEffect(() => {
+    const cachedCart = localStorage.getItem("MERKATO_CART");
+    if (cachedCart) setCart(JSON.parse(cachedCart));
+
+    const cachedRegion = localStorage.getItem("MERKATO_REGION");
+    if (cachedRegion) setActiveRegion(JSON.parse(cachedRegion));
+
+    const cachedUser = localStorage.getItem("MERKATO_USER");
+    if (cachedUser) setUser(JSON.parse(cachedUser));
+  }, []);
 
   const [orderHistory, setOrderHistory] = useState([]);
 
@@ -267,8 +268,10 @@ export function AppProvider({ children }) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("MERKATO_CART");
       localStorage.removeItem("MERKATO_REGION");
+      localStorage.removeItem("MERKATO_TOKEN");
+      localStorage.removeItem("MERKATO_USER");
+      window.location.href = "/auth/login";
     }
-    console.log("🔒 Session cleared cleanly.");
   };
 
   const syncCart = (updatedCart) => {
@@ -308,6 +311,8 @@ export function AppProvider({ children }) {
     syncCart(cart.filter((item) => item.id !== id));
   };
 
+  const clearCart = () => syncCart([]);
+
   const updateRegionSelection = (regionCode) => {
     const match = TARGET_REGIONS.find((r) => r.code === regionCode);
     if (!match) return;
@@ -339,6 +344,7 @@ export function AppProvider({ children }) {
         addToCart,
         updateCartQty,
         removeFromCart,
+        clearCart,
         activeRegion,
         updateRegionSelection,
         user,

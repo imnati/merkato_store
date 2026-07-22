@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const LanguageContext = createContext();
 
@@ -238,13 +238,14 @@ const DICTIONARY = {
 };
 
 export function LanguageProvider({ children }) {
-  const [locale, setLocale] = useState(() => {
-    if (typeof window !== "undefined") {
-      const cachedLocale = localStorage.getItem("MERKATO_LOCALE");
-      return cachedLocale && DICTIONARY[cachedLocale] ? cachedLocale : "en";
-    }
-    return "en";
-  });
+  const [locale, setLocale] = useState("en");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const cachedLocale = localStorage.getItem("MERKATO_LOCALE");
+    if (cachedLocale && DICTIONARY[cachedLocale]) setLocale(cachedLocale);
+    setMounted(true);
+  }, []);
 
   const switchLanguage = (langCode) => {
     if (DICTIONARY[langCode]) {
@@ -260,7 +261,7 @@ export function LanguageProvider({ children }) {
       value={{ locale, t: DICTIONARY[locale] || DICTIONARY.en, switchLanguage }}
     >
       <div
-        dir={DICTIONARY[locale]?.dir || "ltr"}
+        dir={mounted ? (DICTIONARY[locale]?.dir || "ltr") : "ltr"}
         suppressHydrationWarning={true}
       >
         {children}
