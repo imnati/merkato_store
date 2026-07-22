@@ -13,42 +13,19 @@ export default function LoginPage() {
     e.preventDefault();
     setErrorStatusMessage("");
     setIsAuthenticating(true);
-
-    if (!identityEmail || !identityEmail.includes("@")) {
-      setErrorStatusMessage(
-        "Please enter a valid registered email address template.",
-      );
-      setIsAuthenticating(false);
-      return;
-    }
-
-    if (!credentialPassword || credentialPassword.length < 6) {
-      setErrorStatusMessage(
-        "Secure credential signature token must span at least 6 characters.",
-      );
-      setIsAuthenticating(false);
-      return;
-    }
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (
-        identityEmail.startsWith("admin") ||
-        credentialPassword === "123456"
-      ) {
-        alert(
-          "✓ Authentication Complete! Signed access token mapped securely onto active profile environment.",
-        );
-        window.location.href = "/";
-      } else {
-        setErrorStatusMessage(
-          "Access Denied: Invalid security signature credentials matching parameters array.",
-        );
-      }
+      const { data } = await import("@/lib/axios").then((m) =>
+        m.default.post("/auth/login", {
+          email: identityEmail,
+          password: credentialPassword,
+        })
+      );
+      localStorage.setItem("MERKATO_TOKEN", data.token);
+      localStorage.setItem("MERKATO_USER", JSON.stringify(data));
+      window.location.href = "/";
     } catch (err) {
       setErrorStatusMessage(
-        "Connection timeout to user profile authorization router database.",
+        err.response?.data?.message || "Login failed. Please try again.",
       );
     } finally {
       setIsAuthenticating(false);
@@ -60,10 +37,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-xl p-8 sm:p-10 space-y-6 transition-all">
         <div className="text-center space-y-1">
           <h2 className="text-2xl font-black font-mono tracking-tight text-slate-900 uppercase">
-            Account Login
+            Sign In
           </h2>
           <p className="text-xs text-gray-400 font-medium">
-            Provide profile indicators to unlock multi-regional catalog nodes.
+            Enter your email and password to continue.
           </p>
         </div>
 
@@ -76,14 +53,14 @@ export default function LoginPage() {
         <form className="space-y-4" onSubmit={handleAuthenticationSubmit}>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Account Email Address
+              Email Address
             </label>
 
             <input
               type="email"
               value={identityEmail}
               onChange={(e) => setIdentityEmail(e.target.value)}
-              placeholder="e.g. abebe@merkatostore.com"
+              placeholder="you@example.com"
               className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-medium"
               required
             />
@@ -91,13 +68,13 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Secure Credential Password
+              Password
             </label>
             <input
               type="password"
               value={credentialPassword}
               onChange={(e) => setCredentialPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-mono"
               required
             />
@@ -132,10 +109,10 @@ export default function LoginPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  <span>Verifying Encrypted Signature Token...</span>
+                  <span>Logging in...</span>
                 </>
               ) : (
-                "Authorize Account Session"
+                "Sign In"
               )}
             </button>
           </div>
@@ -147,16 +124,16 @@ export default function LoginPage() {
               href="/auth/forgot-password"
               className="text-orange-500 hover:text-orange-600 hover:underline transition"
             >
-              Forgot Access Token / Password?
+              Forgot your password?
             </Link>
           </div>
           <div className="text-gray-400 font-medium">
-            No profile configurations registered?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
               className="text-slate-800 hover:text-slate-900 hover:underline transition font-bold"
             >
-              Register Entry Node
+              Create one
             </Link>
           </div>
         </div>

@@ -12,25 +12,14 @@ export default function ForgotPasswordPage() {
   const handleRecoverySubmit = async (e) => {
     e.preventDefault();
     setErrorStatus("");
-    setSuccessStatus(false);
     setLoading(true);
-
-    if (!identityEmail || !identityEmail.includes("@")) {
-      setErrorStatus(
-        "Please provide a valid registered email address parameters array.",
-      );
-      setLoading(false);
-      return;
-    }
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      setSuccessStatus(true);
-    } catch (err) {
-      setErrorStatus(
-        "Connection timeout to the user identity security database cluster.",
+      await import("@/lib/axios").then((m) =>
+        m.default.post("/auth/forgot-password", { email: identityEmail })
       );
+      setSuccessStatus(true);
+    } catch {
+      setErrorStatus("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

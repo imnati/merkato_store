@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [securePassword, setSecurePassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [targetMarketRegion, setTargetMarketRegion] = useState("AE");
+  const [adminCode, setAdminCode] = useState("");
 
   const [errorStatus, setErrorStatus] = useState("");
   const [successStatus, setSuccessStatus] = useState(false);
@@ -21,53 +22,25 @@ export default function RegisterPage() {
   const handleOnboardingSubmit = async (e) => {
     e.preventDefault();
     setErrorStatus("");
-    setSuccessStatus(false);
     setIsProvisioning(true);
-
-    if (
-      !fullName.trim() ||
-      !identityEmail.trim() ||
-      !securePassword ||
-      !confirmPassword
-    ) {
-      setErrorStatus(
-        "Please provide clean string inputs inside all configuration field parameters.",
-      );
-      setIsProvisioning(false);
-      return;
-    }
-
-    if (!identityEmail.includes("@")) {
-      setErrorStatus(
-        "Invalid account syntax parameter: Please specify a valid registration email string.",
-      );
-      setIsProvisioning(false);
-      return;
-    }
-
-    if (securePassword.length < 6) {
-      setErrorStatus(
-        "Credentials strength requirement: Secure access password must contain at least 6 characters.",
-      );
-      setIsProvisioning(false);
-      return;
-    }
-
     if (securePassword !== confirmPassword) {
-      setErrorStatus(
-        "Data verification breakdown: Password matching configurations do not overlap.",
-      );
+      setErrorStatus("Passwords do not match.");
       setIsProvisioning(false);
       return;
     }
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await import("@/lib/axios").then((m) =>
+        m.default.post("/auth/register", {
+          name: fullName,
+          email: identityEmail,
+          password: securePassword,
+          region: targetMarketRegion,
+          adminCode,
+        })
+      );
       setSuccessStatus(true);
     } catch (err) {
-      setErrorStatus(
-        "Connection timeout to the registration pipeline routing gateway.",
-      );
+      setErrorStatus(err.response?.data?.message || "Registration failed.");
     } finally {
       setIsProvisioning(false);
     }
@@ -82,18 +55,17 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-black text-slate-900 tracking-tight font-mono uppercase">
-              Profile Instantiated
+              Account Created
             </h2>
             <p className="text-xs text-gray-500 font-medium leading-relaxed">
-              Your structural account credentials have cleared server validation
-              parameters successfully. Your profile enclave has initialized.
+              Your account has been created successfully. You can now log in.
             </p>
           </div>
           <Link
             href="/auth/login"
             className="inline-block w-full bg-[#0B1528] hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider py-4 rounded-xl transition shadow-md text-center"
           >
-            Advance to Authorization Portal
+            Go to Login
           </Link>
         </div>
       </div>
@@ -108,10 +80,10 @@ export default function RegisterPage() {
             suppressHydrationWarning={true}
             className="text-2xl font-black font-mono tracking-tight text-slate-900 uppercase"
           >
-            {currentT?.signUp || "Register Account"}
+            {currentT?.signUp || "Create Account"}
           </h2>
           <p className="text-xs text-gray-400 font-medium">
-            Configure profile constants to log a regional marketplace entry.
+            Fill in your details to get started.
           </p>
         </div>
 
@@ -123,13 +95,13 @@ export default function RegisterPage() {
         <form className="space-y-4" onSubmit={handleOnboardingSubmit}>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Full Identity Name
+              Full Name
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Abebe Kebede"
+              placeholder="John Doe"
               className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-medium"
               required
             />
@@ -137,39 +109,37 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Account Email Address
+              Email Address
             </label>
             <input
               type="email"
               value={identityEmail}
               onChange={(e) => setIdentityEmail(e.target.value)}
-              placeholder="e.g. abebe@merkatostore.com"
+              placeholder="you@example.com"
               className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-medium"
               required
             />
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Target Market Default Country
+              Country
             </label>
             <select
               value={targetMarketRegion}
               onChange={(e) => setTargetMarketRegion(e.target.value)}
               className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl p-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-700 cursor-pointer"
             >
-              <option value="NG">🇳🇬 Nigeria (West Africa Hub)</option>
-              <option value="KE">🇰🇪 Kenya (East Africa Freight)</option>
-              <option value="ET">🇪🇹 Ethiopia (Regional Core Terminal)</option>
-              <option value="AE">🇦🇪 UAE (Middle East Gateway Node)</option>
-              <option value="SA">🇸🇦 Saudi Arabia (Gulf Commerce Route)</option>
-              <option value="EG">
-                🇪🇬 Egypt (North Africa Port Connection)
-              </option>
+              <option value="NG">🇳🇬 Nigeria</option>
+              <option value="KE">🇰🇪 Kenya</option>
+              <option value="ET">🇪🇹 Ethiopia</option>
+              <option value="AE">🇦🇪 UAE</option>
+              <option value="SA">🇸🇦 Saudi Arabia</option>
+              <option value="EG">🇪🇬 Egypt</option>
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Configure Secure Password
+              Password
             </label>
             <input
               type="password"
@@ -182,15 +152,27 @@ export default function RegisterPage() {
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Confirm Access Password
+              Confirm Password
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Confirm your password"
               className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-mono"
               required
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
+              Admin Code (optional)
+            </label>
+            <input
+              type="password"
+              value={adminCode}
+              onChange={(e) => setAdminCode(e.target.value)}
+              placeholder="Leave empty for regular account"
+              className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-mono"
             />
           </div>
           <div className="pt-2">
@@ -222,10 +204,10 @@ export default function RegisterPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  <span>Provisioning Cloud Identity Node...</span>
+                  <span>Creating account...</span>
                 </>
               ) : (
-                "Instantiate Profile"
+                "Create Account"
               )}
             </button>
           </div>
@@ -234,12 +216,12 @@ export default function RegisterPage() {
           className="text-center pt-4 border-t border-gray-100 text-[11px] font-medium text-gray-400"
           suppressHydrationWarning={true}
         >
-          Already registered an entry node configuration?{" "}
+          Already have an account?{" "}
           <Link
             href="/auth/login"
             className="text-slate-800 hover:underline font-bold transition ml-1"
           >
-            {currentT?.signIn || "Log In Securely"}
+            {currentT?.signIn || "Log In"}
           </Link>
         </div>
       </div>
