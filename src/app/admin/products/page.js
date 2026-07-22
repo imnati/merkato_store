@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppEngine } from "@/context/AppContext";
+import api from "@/lib/axios";
 
 export default function AdminProductsDesk() {
   const { products, setProducts, activeRegion } = useAppEngine();
+  const router = useRouter();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("MERKATO_USER") || "null");
+    if (!user || user.role !== "admin") router.replace("/");
+  }, [router]);
 
   const [formName, setFormName] = useState("");
   const [formSku, setFormSku] = useState("");
@@ -14,17 +22,14 @@ export default function AdminProductsDesk() {
   const [formPrice, setFormPrice] = useState("");
   const [formStock, setFormStock] = useState("");
 
-  const handleCreateProduct = (e) => {
+  const handleCreateProduct = async (e) => {
     e.preventDefault();
     if (!formName || !formSku || !formBrand || !formPrice || !formStock) {
-      alert("Please populate all required validation parameter fields.");
+      alert("Please fill all required fields.");
       return;
     }
-
     const stockNum = parseInt(formStock);
-
-    const freshItem = {
-      id: `p-${Date.now()}`,
+    const newProduct = {
       name: formName,
       sku: formSku.toUpperCase().trim(),
       brand: formBrand.trim(),
@@ -32,30 +37,25 @@ export default function AdminProductsDesk() {
       price: parseFloat(formPrice),
       discountPrice: null,
       images: ["📦", "⚙️", "🚚"],
-      stockQuantity: stockNum,
+      stock: stockNum,
       status: stockNum <= 5 ? "Low Stock" : "In Stock",
     };
-
-    const currentProducts = products || [];
-    setProducts([...currentProducts, freshItem]);
-
-    setFormName("");
-    setFormSku("");
-    setFormBrand("");
-    setFormPrice("");
-    setFormStock("");
-    alert("✓ Product document record created cleanly in database collection.");
+    try {
+      const { data } = await api.post("/products", newProduct);
+      setProducts([...(products || []), data]);
+      setFormName(""); setFormSku(""); setFormBrand(""); setFormPrice(""); setFormStock("");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create product.");
+    }
   };
 
-  const handleDestroyProduct = (id) => {
-    if (
-      confirm(
-        "Confirm permanent destruction of this catalog listing document index?",
-      )
-    ) {
-      const currentProducts = products || [];
-      setProducts(currentProducts.filter((p) => p.id !== id));
-      alert("🗑️ Document removed from active cluster storage layers.");
+  const handleDestroyProduct = async (id) => {
+    if (!confirm("Delete this product?")) return;
+    try {
+      await api.delete(`/products/${id}`);
+      setProducts((products || []).filter((p) => p._id === id ? false : p.id !== id));
+    } catch {
+      alert("Failed to delete product.");
     }
   };
 

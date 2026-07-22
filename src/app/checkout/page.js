@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppEngine } from "@/context/AppContext";
 import { useTranslationEngine } from "@/context/LanguageContext";
+import api from "@/lib/axios";
 
 const PROMO_CODES_REGISTRY = {
   MERKATO20: 0.2,
@@ -14,6 +16,13 @@ export default function CheckoutPage() {
   const { cart, updateCartQty, removeFromCart, activeRegion, clearCart } =
     useAppEngine();
   const { t } = useTranslationEngine();
+  const router = useRouter();
+
+  // Protect route
+  useEffect(() => {
+    const token = localStorage.getItem("MERKATO_TOKEN");
+    if (!token) router.replace("/auth/login");
+  }, [router]);
 
   const [consigneeName, setConsigneeName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -68,28 +77,25 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (cart.length === 0) return;
     if (!consigneeName || !contactPhone || !streetAddress || !cityName) {
-      alert(
-        "Please populate all mandatory shipping destination delivery parameters.",
-      );
+      alert("Please fill all shipping fields.");
       return;
     }
-
     setIsProcessing(true);
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      setOrderConfirmation({
-        trackingNumber: `MK-ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-        recipient: consigneeName,
-        totalCharged: grandTotalSummaryAmount,
-        destinationZone: activeRegion?.name || "Global Node",
-        currencySymbol: activeRegion?.symbol || "$",
+      const { data } = await api.post("/payment/stripe/create-session", {
+        items: cart.map((item) => ({
+          product: item._id || item.id,
+          name: item.name,
+          price: item.activePrice || item.price,
+          quantity: item.quantity,
+        })),
+        destination: `${streetAddress}, ${cityName}, ${activeRegion?.name}`,
+        courier: "Regional Freight",
       });
-      if (clearCart) clearCart();
+      // Redirect to Stripe hosted checkout page
+      window.location.href = data.url;
     } catch (err) {
-      alert("Fulfillment pipeline network timeout error.");
-    } finally {
+      alert(err.response?.data?.message || "Payment failed. Please try again.");
       setIsProcessing(false);
     }
   };
@@ -183,7 +189,7 @@ export default function CheckoutPage() {
               <div className="space-y-4 divide-y divide-gray-50">
                 {cart.map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id || item.id}
                     className="flex items-center justify-between gap-4 pt-4 first:pt-0 text-xs font-medium"
                   >
                     <div className="flex items-center gap-3 min-w-0">

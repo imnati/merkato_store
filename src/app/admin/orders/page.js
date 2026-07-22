@@ -1,59 +1,29 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppEngine } from "@/context/AppContext";
+import api from "@/lib/axios";
 
 export default function AdminOrdersLogistics() {
-  const { orderHistory, setOrderHistory, activeRegion } = useAppEngine();
+  const { activeRegion } = useAppEngine();
+  const [activeOrdersList, setActiveOrdersList] = useState([]);
 
-  const activeOrdersList =
-    orderHistory && orderHistory.length > 0
-      ? orderHistory
-      : [
-          {
-            id: "MK-ORD-884102",
-            buyer: "Abebe Kebede",
-            summary: "AcousticMax Pro ANC Headphones (x1)",
-            total: 289.0,
-            destination: "Ethiopia Hub Terminal",
-            courier: "DHL Regional Express",
-            status: "In Transit",
-          },
-          {
-            id: "MK-ORD-710492",
-            buyer: "Fatima Al-Maktoum",
-            summary: "Organic Arabica Coffee (x2)",
-            total: 59.0,
-            destination: "UAE Gateway Node",
-            courier: "Aramex Gulf Freight",
-            status: "Processing",
-          },
-          {
-            id: "MK-ORD-651204",
-            buyer: "Chinedu Okafor",
-            summary: "Classic Casual Denim Jacket (x1)",
-            total: 120.0,
-            destination: "Nigeria Logistics Center",
-            courier: "FedEx West Africa",
-            status: "In Transit",
-          },
-        ];
+  useEffect(() => {
+    api.get("/orders")
+      .then((res) => setActiveOrdersList(res.data))
+      .catch(() => {});
+  }, []);
 
-  // Operational status transition workflow modifiers updating global/local state
-  const handleToggleClearanceStatus = (id, targetStatus) => {
-    const updatedQueue = activeOrdersList.map((order) =>
-      order.id === id ? { ...order, status: targetStatus } : order,
-    );
-
-    // Check if setOrderHistory handler is available in engine before committing mutation
-    if (setOrderHistory) {
-      setOrderHistory(updatedQueue);
+  const handleToggleClearanceStatus = async (id, targetStatus) => {
+    try {
+      const { data } = await api.put(`/orders/${id}/status`, { status: targetStatus });
+      setActiveOrdersList((prev) =>
+        prev.map((o) => (o._id === id ? data : o))
+      );
+    } catch {
+      alert("Failed to update order status.");
     }
-
-    alert(
-      `🚚 Logistics Pipeline Updated: Order ${id} changed to "${targetStatus}".`,
-    );
   };
 
   return (
@@ -94,11 +64,11 @@ export default function AdminOrdersLogistics() {
             <tbody className="divide-y divide-gray-50 text-slate-700">
               {activeOrdersList.map((order) => (
                 <tr
-                  key={order.id}
+                  key={order._id || order.id}
                   className="hover:bg-slate-50/40 transition-colors"
                 >
                   <td className="p-3 font-mono font-bold text-slate-900">
-                    {order.id}
+                    {order._id || order.id}
                   </td>
                   <td className="p-3 font-semibold text-slate-500">
                     <p className="text-slate-900 font-extrabold">
@@ -145,7 +115,7 @@ export default function AdminOrdersLogistics() {
                       <>
                         <button
                           onClick={() =>
-                            handleToggleClearanceStatus(order.id, "In Transit")
+                            handleToggleClearanceStatus(order._id || order.id, "In Transit")
                           }
                           disabled={order.status === "In Transit"}
                           className={`text-[11px] font-bold border px-2.5 py-1 rounded-lg transition active:scale-95 ${
@@ -159,7 +129,7 @@ export default function AdminOrdersLogistics() {
                         <button
                           onClick={() =>
                             handleToggleClearanceStatus(
-                              order.id,
+                              order._id || order.id,
                               "Delivered Complete",
                             )
                           }
@@ -170,7 +140,7 @@ export default function AdminOrdersLogistics() {
                         <button
                           onClick={() =>
                             handleToggleClearanceStatus(
-                              order.id,
+                              order._id || order.id,
                               "Cancelled / Refunded",
                             )
                           }

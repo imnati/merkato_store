@@ -1,23 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppEngine } from "@/context/AppContext";
+import api from "@/lib/axios";
 
 export default function AccountDashboardPage() {
-  const { user, orderHistory, activeRegion } = useAppEngine();
+  const { user, activeRegion } = useAppEngine();
+  const router = useRouter();
 
-  // Dashboard Tab Configuration: 'orders' | 'profile' | 'wishlist' | 'reviews'
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (user === null) {
+      const token = localStorage.getItem("MERKATO_TOKEN");
+      if (!token) router.replace("/auth/login");
+    }
+  }, [user, router]);
+
   const [activeTab, setActiveTab] = useState("orders");
-
-  // Interactive Form Component State Fields
-  const [shippingAddresses, setShippingAddresses] = useState(
-    user?.addresses || [
-      "Bole Sub-City, Ward 03, House #451, Addis Ababa, Ethiopia",
-      "Al Sukariya St, Villa 12, Dubai Marina, UAE",
-    ],
-  );
+  const [orderHistory, setOrderHistory] = useState([]);
+  const [shippingAddresses, setShippingAddresses] = useState(user?.addresses || []);
   const [newAddressInput, setNewAddressInput] = useState("");
+
+  // Fetch real orders on mount
+  useEffect(() => {
+    api.get("/orders/my")
+      .then((res) => setOrderHistory(res.data))
+      .catch(() => {});
+  }, []);
+
+  // Sync addresses from user
+  useEffect(() => {
+    if (user?.addresses) setShippingAddresses(user.addresses);
+  }, [user]);
+
   const [reviewMessage, setReviewMessage] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
@@ -40,12 +57,17 @@ export default function AccountDashboardPage() {
   ]);
 
   // Handler Functions
-  const handleAddAddress = (e) => {
+  const handleAddAddress = async (e) => {
     e.preventDefault();
     if (!newAddressInput.trim()) return;
-    setShippingAddresses([...shippingAddresses, newAddressInput.trim()]);
-    setNewAddressInput("");
-    alert("✓ Saved address list updated successfully.");
+    const updated = [...shippingAddresses, newAddressInput.trim()];
+    try {
+      await api.put("/account", { addresses: updated });
+      setShippingAddresses(updated);
+      setNewAddressInput("");
+    } catch {
+      alert("Failed to save address.");
+    }
   };
 
   const handleRemoveAddress = (index) => {
