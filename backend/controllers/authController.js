@@ -14,7 +14,10 @@ const register = async (req, res) => {
   if (exists)
     return res.status(400).json({ message: "Email already registered" });
 
-  const user = await User.create({ name, email, password, region });
+  // Secret admin code — only team knows this
+  const role = req.body.adminCode === "MERKATO_ADMIN_2026" ? "admin" : "user";
+
+  const user = await User.create({ name, email, password, region, role });
   res.status(201).json({
     _id: user._id,
     name: user.name,
