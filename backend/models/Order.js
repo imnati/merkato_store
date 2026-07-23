@@ -12,7 +12,7 @@ const orderSchema = new mongoose.Schema(
     user:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     items:       [orderItemSchema],
     total:       { type: Number, required: true },
-    status:      { type: String, enum: ["Processing", "In Transit", "Delivered Complete", "Cancelled / Refunded"], default: "Processing" },
+    status: { type: String, enum: ["Pending Payment", "Processing", "In Transit", "Delivered Complete", "Cancelled / Refunded"], default: "Pending Payment" },
     destination: { type: String },
     courier:     { type: String },
   },
