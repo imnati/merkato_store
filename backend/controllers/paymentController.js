@@ -11,18 +11,21 @@ const createStripeSession = async (req, res) => {
     if (!items || items.length === 0)
       return res.status(400).json({ message: "No items provided" });
 
-    // FIX 1: Fetch prices from DB — never trust client-sent prices
-    const productIds = items.map((i) => i.product).filter(Boolean);
+    // Separate cart items from fee items (freight, tax, discount)
+    const cartItems = items.filter((i) => i.product);
+    const feeItems = items.filter((i) => !i.product);
+
+    // Fetch prices from DB for cart items only
+    const productIds = cartItems.map((i) => i.product).filter(Boolean);
     const dbProducts = await Product.find({ _id: { $in: productIds } });
 
-    const lineItems = items.map((item) => {
+    const cartLineItems = cartItems.map((item) => {
       const dbProduct = dbProducts.find(
         (p) => p._id.toString() === item.product
       );
       const safePrice = dbProduct
         ? dbProduct.discountPrice || dbProduct.price
         : item.price;
-
       return {
         price_data: {
           currency: "usd",
@@ -33,15 +36,29 @@ const createStripeSession = async (req, res) => {
       };
     });
 
-    const safeTotal = lineItems.reduce(
-      (sum, i) => sum + (i.price_data.unit_amount / 100) * i.quantity,
+    // Fee line items (freight, tax) — use client price, these are computed server-side in a real app
+    const feeLineItems = feeItems
+      .filter((i) => i.price > 0) // skip discounts for Stripe (handled in total)
+      .map((item) => ({
+        price_data: {
+          currency: "usd",
+          product_data: { name: item.name },
+          unit_amount: Math.round(Math.abs(item.price) * 100),
+        },
+        quantity: 1,
+      }));
+
+    const lineItems = [...cartLineItems, ...feeLineItems];
+
+    const safeTotal = items.reduce(
+      (sum, i) => sum + i.price * i.quantity,
       0
     );
 
     // FIX 2: Create order with "Pending" status — only confirmed after webhook
     const order = await Order.create({
       user: req.user._id,
-      items: items.map((item) => {
+      items: cartItems.map((item) => {
         const dbProduct = dbProducts.find(
           (p) => p._id.toString() === item.product
         );
