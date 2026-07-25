@@ -83,12 +83,32 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     try {
       const { data } = await api.post("/payment/stripe/create-session", {
-        items: cart.map((item) => ({
-          product: item._id || item.id,
-          name: item.name,
-          price: item.activePrice || item.price,
-          quantity: item.quantity,
-        })),
+        items: [
+          ...cart.map((item) => ({
+            product: item._id || item.id,
+            name: item.name,
+            price: item.activePrice || item.price,
+            quantity: item.quantity,
+          })),
+          ...(regionalFreightCost > 0 ? [{
+            product: null,
+            name: "Cross-Border Freight Logistics",
+            price: regionalFreightCost,
+            quantity: 1,
+          }] : []),
+          ...(computedRegionalTax > 0 ? [{
+            product: null,
+            name: `Regional Tax (${(activeRegion?.taxRate || 0) * 100}%)`,
+            price: parseFloat(computedRegionalTax.toFixed(2)),
+            quantity: 1,
+          }] : []),
+          ...(discountDeduction > 0 ? [{
+            product: null,
+            name: `Promo Discount (${activeDiscountRatio * 100}% off)`,
+            price: -parseFloat(discountDeduction.toFixed(2)),
+            quantity: 1,
+          }] : []),
+        ],
         destination: `${streetAddress}, ${cityName}, ${activeRegion?.name}`,
         courier: "Regional Freight",
       });
