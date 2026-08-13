@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { SearchIcon } from "./Icons";
 
 export default function EfficientSearchInput({
   onDebounceSearch,
@@ -32,7 +33,7 @@ export default function EfficientSearchInput({
       />
 
       <span className="absolute inset-y-0 end-4 flex items-center text-gray-400 select-none pointer-events-none">
-        🔍
+        <SearchIcon className="h-5 w-5" />
       </span>
     </div>
   );

@@ -6,6 +6,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppEngine, TARGET_REGIONS } from "@/context/AppContext";
 import { useTranslationEngine } from "@/context/LanguageContext";
 import EfficientSearchInput from "./EfficientSearchInput";
+import {
+  GlobeIcon,
+  CartIcon,
+  UserIcon,
+  LogoutIcon,
+  SettingsIcon,
+  MenuIcon,
+  CloseIcon,
+} from "./Icons";
 
 export default function DynamicNavbar() {
   const {
@@ -15,6 +24,7 @@ export default function DynamicNavbar() {
     user,
     removeFromCart,
     logoutUser,
+    formatPrice,
   } = useAppEngine();
 
   const { locale, t, switchLanguage } = useTranslationEngine();
@@ -58,7 +68,8 @@ export default function DynamicNavbar() {
     const params = new URLSearchParams(searchParams.toString());
     if (term) params.set("search", term);
     else params.delete("search");
-    router.push(`/?${params.toString()}`);
+    const qs = params.toString();
+    router.replace(qs ? `/?${qs}` : "/");
   };
 
   const handleSaveLocation = (e) => {
@@ -96,7 +107,6 @@ export default function DynamicNavbar() {
   const displayFlag = mounted ? activeRegion?.flag : "🌐";
   const displayName = mounted ? activeRegion?.name : "Global";
   const displayCurrency = mounted ? activeRegion?.currency || "AED" : "AED";
-  const displaySymbol = mounted ? activeRegion?.symbol || "د.إ" : "د.إ";
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm w-full">
@@ -203,7 +213,9 @@ export default function DynamicNavbar() {
                 className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 px-3 py-2.5 rounded-xl text-slate-700 cursor-pointer hover:bg-gray-100 transition font-black"
                 suppressHydrationWarning={true}
               >
-                <span>🌐</span>{" "}
+                <span>
+                  <GlobeIcon className="h-4 w-4" />
+                </span>{" "}
                 <span>
                   {mounted ? locale?.toUpperCase() : "EN"}-{displayCurrency} ▼
                 </span>
@@ -263,9 +275,9 @@ export default function DynamicNavbar() {
             <Link
               href="/account"
               suppressHydrationWarning={true}
-              className="hover:text-emerald-600 transition flex items-center gap-1"
+              className="hover:text-emerald-600 transition flex items-center gap-1.5"
             >
-              👤 {currentT?.dashboard || "Dashboard"}
+              <UserIcon className="h-4 w-4" /> {currentT?.dashboard || "Dashboard"}
             </Link>
 
             {user?.role === "admin" && (
@@ -290,7 +302,10 @@ export default function DynamicNavbar() {
                 suppressHydrationWarning={true}
                 className="relative flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-xs cursor-pointer"
               >
-                <span>🛒 {currentT?.basketTitle || "Basket Summary"}</span>
+                <span>
+                  <CartIcon className="h-4 w-4" />{" "}
+                  {currentT?.basketTitle || "Basket Summary"}
+                </span>
                 <span className="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center">
                   {totalBasketUnits}
                 </span>
@@ -306,7 +321,9 @@ export default function DynamicNavbar() {
                   </h4>
                   {safeCart.length === 0 ? (
                     <div className="py-6 space-y-2">
-                      <span className="text-4xl block">🛒</span>
+                      <span className="text-slate-300 block mx-auto">
+                    <CartIcon className="h-10 w-10" />
+                  </span>
                       <p
                         suppressHydrationWarning={true}
                         className="text-xs font-bold text-slate-600"
@@ -330,11 +347,9 @@ export default function DynamicNavbar() {
                                 className="text-[10px] font-mono text-gray-400 font-bold"
                                 suppressHydrationWarning={true}
                               >
-                                {displaySymbol}
-                                {(item.activePrice || item.price || 0).toFixed(
-                                  2,
-                                )}{" "}
-                                x {item.quantity}
+                                {formatPrice(item.activePrice || item.price)}
+                                {" x "}
+                                {item.quantity}
                               </p>
                             </div>
                             <button
@@ -353,8 +368,7 @@ export default function DynamicNavbar() {
                           className="text-emerald-600 font-mono"
                           suppressHydrationWarning={true}
                         >
-                          {displaySymbol}
-                          {totalCost.toFixed(2)}
+                          {formatPrice(totalCost)}
                         </span>
                       </div>
                     </>
@@ -378,9 +392,10 @@ export default function DynamicNavbar() {
                 <button
                   type="button"
                   onClick={() => logoutUser?.()}
-                  className="text-gray-400 hover:text-red-600 transition flex items-center gap-0.5 cursor-pointer font-black"
+                  className="text-gray-400 hover:text-red-600 transition flex items-center gap-1.5 cursor-pointer font-black"
                 >
-                  {currentT?.logout || "Logout"} 🚪
+                  <LogoutIcon className="h-4 w-4" />{" "}
+                  {currentT?.logout || "Logout"}
                 </button>
               ) : (
                 <>
@@ -405,9 +420,13 @@ export default function DynamicNavbar() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-gray-600 text-2xl p-1 focus:outline-none select-none"
+              className="lg:hidden text-gray-600 p-1 focus:outline-none select-none"
             >
-              {mobileMenuOpen ? "✕" : "☰"}
+              {mobileMenuOpen ? (
+                <CloseIcon className="h-6 w-6" />
+              ) : (
+                <MenuIcon className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -474,18 +493,18 @@ export default function DynamicNavbar() {
             href="/account"
             onClick={() => setMobileMenuOpen(false)}
             suppressHydrationWarning={true}
-            className="block py-2 hover:text-emerald-600 transition"
+            className="block py-2 hover:text-emerald-600 transition flex items-center gap-2"
           >
-            👤 {currentT?.dashboard || "Dashboard"}
+            <UserIcon className="h-4 w-4" /> {currentT?.dashboard || "Dashboard"}
           </Link>
           {user?.role === "admin" && (
             <Link
               href="/admin"
               onClick={() => setMobileMenuOpen(false)}
               suppressHydrationWarning={true}
-              className="block py-2 text-orange-600 font-bold font-mono"
+              className="block py-2 text-orange-600 font-bold font-mono flex items-center gap-2"
             >
-              ⚙️ {currentT?.adminBadge || "ADMIN"}
+              <SettingsIcon className="h-4 w-4" /> {currentT?.adminBadge || "ADMIN"}
             </Link>
           )}
 
@@ -500,10 +519,11 @@ export default function DynamicNavbar() {
                   logoutUser?.();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full text-center bg-red-50 text-red-600 py-2.5 rounded-xl font-bold"
-              >
-                {currentT?.logout || "Logout"} 🚪
-              </button>
+className="w-full text-center bg-red-50 text-red-600 py-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5"
+                >
+                  <LogoutIcon className="h-4 w-4" />{" "}
+                  {currentT?.logout || "Logout"}
+                </button>
             ) : (
               <>
                 <Link
