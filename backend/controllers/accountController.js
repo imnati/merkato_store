@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const asyncHandler = require("../middleware/asyncHandler");
 
 // GET /api/account
 const getProfile = async (req, res) => {
@@ -29,4 +30,33 @@ const updatePassword = async (req, res) => {
   res.json({ message: "Password updated" });
 };
 
-module.exports = { getProfile, updateProfile, updatePassword };
+// PUT /api/account/wishlist  { productId }
+const addWishlist = async (req, res) => {
+  const { productId } = req.body;
+  if (!productId) return res.status(400).json({ message: "Product ID is required" });
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $addToSet: { wishlist: productId } },
+    { new: true }
+  ).select("-password");
+  res.json(user.wishlist);
+};
+
+// DELETE /api/account/wishlist/:productId
+const removeWishlist = async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $pull: { wishlist: req.params.productId } },
+    { new: true }
+  ).select("-password");
+  res.json(user.wishlist);
+};
+
+module.exports = {
+  getProfile: asyncHandler(getProfile),
+  updateProfile: asyncHandler(updateProfile),
+  updatePassword: asyncHandler(updatePassword),
+  addWishlist: asyncHandler(addWishlist),
+  removeWishlist: asyncHandler(removeWishlist),
+};

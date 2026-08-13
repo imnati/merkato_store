@@ -1,4 +1,5 @@
 const Review = require("../models/Review");
+const asyncHandler = require("../middleware/asyncHandler");
 
 // GET /api/reviews?product=:productId
 const getReviews = async (req, res) => {
@@ -36,4 +37,8 @@ const deleteReview = async (req, res) => {
   res.json({ message: "Review deleted" });
 };
 
-module.exports = { getReviews, createReview, deleteReview };
+module.exports = {
+  getReviews: asyncHandler(getReviews),
+  createReview: asyncHandler(createReview),
+  deleteReview: asyncHandler(deleteReview),
+};

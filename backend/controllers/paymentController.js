@@ -1,47 +1,49 @@
 const Stripe = require("stripe");
 const Order = require("../models/Order");
-const Product = require("../models/Product");
+const asyncHandler = require("../middleware/asyncHandler");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+const SUPPORTED_CURRENCIES = ["usd", "etb", "ngn", "kes", "aed", "sar", "egp"];
 
 // POST /api/payment/stripe/create-session
 const createStripeSession = async (req, res) => {
   try {
-    const { items, destination, courier } = req.body;
+    const { items, destination, courier, discountRatio = 0, currency = "USD", exchangeRate = 1 } = req.body;
     if (!items || items.length === 0)
       return res.status(400).json({ message: "No items provided" });
+
+    const ratio = Number(discountRatio) || 0;
+    const rate = Number(exchangeRate) > 0 ? Number(exchangeRate) : 1;
+    const activeCurrency = SUPPORTED_CURRENCIES.includes(
+      String(currency).toLowerCase()
+    )
+      ? String(currency).toLowerCase()
+      : "usd";
 
     // Separate cart items from fee items (freight, tax, discount)
     const cartItems = items.filter((i) => i.product);
     const feeItems = items.filter((i) => !i.product);
 
-    // Fetch prices from DB for cart items only
-    const productIds = cartItems.map((i) => i.product).filter(Boolean);
-    const dbProducts = await Product.find({ _id: { $in: productIds } });
-
+    // Prices arrive already converted to the customer's local currency
     const cartLineItems = cartItems.map((item) => {
-      const dbProduct = dbProducts.find(
-        (p) => p._id.toString() === item.product
-      );
-      const safePrice = dbProduct
-        ? dbProduct.discountPrice || dbProduct.price
-        : item.price;
+      const chargedPrice = Math.max(0, (item.price || 0) * (1 - ratio));
       return {
         price_data: {
-          currency: "usd",
+          currency: activeCurrency,
           product_data: { name: item.name },
-          unit_amount: Math.round(safePrice * 100),
+          unit_amount: Math.round(chargedPrice * 100),
         },
         quantity: item.quantity,
       };
     });
 
-    // Fee line items (freight, tax) — use client price, these are computed server-side in a real app
+    // Fee line items (freight, tax) — discounts are skipped for Stripe
     const feeLineItems = feeItems
-      .filter((i) => i.price > 0) // skip discounts for Stripe (handled in total)
+      .filter((i) => i.price > 0)
       .map((item) => ({
         price_data: {
-          currency: "usd",
+          currency: activeCurrency,
           product_data: { name: item.name },
           unit_amount: Math.round(Math.abs(item.price) * 100),
         },
@@ -50,25 +52,22 @@ const createStripeSession = async (req, res) => {
 
     const lineItems = [...cartLineItems, ...feeLineItems];
 
-    const safeTotal = items.reduce(
-      (sum, i) => sum + i.price * i.quantity,
+    // Store totals in USD so the existing display pipeline keeps working
+    const grandTotalLocal = items.reduce(
+      (sum, i) => sum + (i.price || 0) * i.quantity,
       0
     );
+    const safeTotal = Math.round((grandTotalLocal / rate) * 100) / 100;
 
     // FIX 2: Create order with "Pending" status — only confirmed after webhook
     const order = await Order.create({
       user: req.user._id,
-      items: cartItems.map((item) => {
-        const dbProduct = dbProducts.find(
-          (p) => p._id.toString() === item.product
-        );
-        return {
-          product: item.product || undefined,
-          name: item.name,
-          price: dbProduct?.discountPrice || dbProduct?.price || item.price,
-          quantity: item.quantity,
-        };
-      }),
+      items: cartItems.map((item) => ({
+        product: item.product || undefined,
+        name: item.name,
+        price: Math.round(((item.price || 0) / rate) * 100) / 100,
+        quantity: item.quantity,
+      })),
       total: safeTotal,
       destination: destination || "",
       courier: courier || "Regional Freight",
@@ -84,6 +83,8 @@ const createStripeSession = async (req, res) => {
       metadata: {
         orderId: order._id.toString(),
         userId: req.user._id.toString(),
+        currency: activeCurrency,
+        exchangeRate: String(rate),
       },
     });
 
@@ -121,14 +122,25 @@ const stripeWebhook = async (req, res) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     if (session.metadata?.orderId) {
+      const rate =
+        Number(session.metadata?.exchangeRate) > 0
+          ? Number(session.metadata?.exchangeRate)
+          : 1;
+      // Reconcile the stored USD total against Stripe's actual charge
+      const usdTotal =
+        Math.round(((session.amount_total || 0) / 100 / rate) * 100) / 100;
       await Order.findByIdAndUpdate(session.metadata.orderId, {
         status: "Processing",
+        total: usdTotal,
       });
-      console.log("✅ Order confirmed by Stripe:", session.metadata.orderId);
+      console.log("✅ Order confirmed by Stripe:", session.metadata.orderId, "→", usdTotal, "USD");
     }
   }
 
   res.status(200).json({ received: true });
 };
 
-module.exports = { createStripeSession, stripeWebhook };
+module.exports = {
+  createStripeSession: asyncHandler(createStripeSession),
+  stripeWebhook: asyncHandler(stripeWebhook),
+};

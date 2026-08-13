@@ -1,4 +1,5 @@
 const Product = require("../models/Product");
+const asyncHandler = require("../middleware/asyncHandler");
 
 // GET /api/products
 const getProducts = async (req, res) => {
@@ -40,4 +41,10 @@ const deleteProduct = async (req, res) => {
   res.json({ message: "Product deleted" });
 };
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct };
+module.exports = {
+  getProducts: asyncHandler(getProducts),
+  getProductById: asyncHandler(getProductById),
+  createProduct: asyncHandler(createProduct),
+  updateProduct: asyncHandler(updateProduct),
+  deleteProduct: asyncHandler(deleteProduct),
+};

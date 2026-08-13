@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const asyncHandler = require("../middleware/asyncHandler");
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -14,8 +15,9 @@ const register = async (req, res) => {
   if (exists)
     return res.status(400).json({ message: "Email already registered" });
 
-  // Secret admin code — only team knows this
-  const role = req.body.adminCode === "MERKATO_ADMIN_2026" ? "admin" : "user";
+  // Secret admin code — read from environment, only team knows this
+  const role =
+    req.body.adminCode === process.env.ADMIN_SECRET_CODE ? "admin" : "user";
 
   const user = await User.create({ name, email, password, region, role });
   res.status(201).json({
@@ -56,4 +58,8 @@ const forgotPassword = async (req, res) => {
   res.json({ message: "If that email exists, a reset link has been sent." });
 };
 
-module.exports = { register, login, forgotPassword };
+module.exports = {
+  register: asyncHandler(register),
+  login: asyncHandler(login),
+  forgotPassword: asyncHandler(forgotPassword),
+};

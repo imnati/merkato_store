@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const asyncHandler = require("../middleware/asyncHandler");
 
 // POST /api/orders  — place a new order (logged in user)
 const createOrder = async (req, res) => {
@@ -45,4 +46,9 @@ const updateOrderStatus = async (req, res) => {
   res.json(order);
 };
 
-module.exports = { createOrder, getMyOrders, getAllOrders, updateOrderStatus };
+module.exports = {
+  createOrder: asyncHandler(createOrder),
+  getMyOrders: asyncHandler(getMyOrders),
+  getAllOrders: asyncHandler(getAllOrders),
+  updateOrderStatus: asyncHandler(updateOrderStatus),
+};

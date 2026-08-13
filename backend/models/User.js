@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     role:      { type: String, enum: ["user", "admin"], default: "user" },
     region:    { type: String, default: "AE" },
     addresses: [{ type: String }],
+    wishlist:  [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
   },
   { timestamps: true }
 );
