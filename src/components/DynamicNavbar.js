@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppEngine, TARGET_REGIONS } from "@/context/AppContext";
 import { useTranslationEngine } from "@/context/LanguageContext";
 import EfficientSearchInput from "./EfficientSearchInput";
+import CartDrawer from "./CartDrawer";
 
 export default function DynamicNavbar() {
-  const { cart, activeRegion, updateRegionSelection, user } = useAppEngine();
+  const { cart, activeRegion, updateRegionSelection, user, isAuthenticated, logout } = useAppEngine();
   const { locale, t, switchLanguage } = useTranslationEngine();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,11 +39,12 @@ export default function DynamicNavbar() {
           {/* 💡 NEW FIXED BRAND LOGO ELEMENT */}
           <Link
             href="/"
-            className="text-xl font-black tracking-tight text-emerald-600 sm:text-2xl font-mono shrink-0 select-none"
+            className="text-xl font-black tracking-tight sm:text-2xl shrink-0 select-none flex items-center gap-1"
           >
             {locale === "en" ? (
               <>
-                MERKATO <span className="text-red-500">STORE</span>
+                <span className="font-[family-name:var(--font-caveat)] text-[#0B1528]">Merkato</span>{" "}
+                <span className="text-[#0D1E3A] font-black">Store</span>
               </>
             ) : (
               // Keeps Arabic formatting looking correct natively
@@ -91,26 +94,56 @@ export default function DynamicNavbar() {
               </button>
             </div>
 
-            {/* Dashboard Links */}
-            <Link href="/account" className="hover:text-emerald-600 transition">
-              👤 Dashboard
-            </Link>
-
-            {user?.role === "admin" && (
-              <Link
-                href="/admin"
-                className="text-orange-600 bg-orange-50 px-2.5 py-1 rounded font-black hover:bg-orange-100 transition"
-              >
-                ADMIN
-              </Link>
+            {/* Auth / User Section */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <Link href="/account" className="hover:text-emerald-600 transition">
+                  👤 Dashboard
+                </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="text-orange-600 bg-orange-50 px-2.5 py-1 rounded font-black hover:bg-orange-100 transition"
+                  >
+                    ADMIN
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    logout();
+                    router.push("/");
+                  }}
+                  className="text-gray-500 hover:text-red-600 transition font-bold text-[10px]"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link href="/auth/login" className="text-gray-600 hover:text-emerald-600 transition font-bold">
+                  Login
+                </Link>
+                <Link href="/auth/register" className="bg-[#0B1528] text-white px-3 py-1.5 rounded-lg font-black hover:bg-slate-800 transition">
+                  Register
+                </Link>
+              </>
             )}
           </div>
 
           {/* Cart Button Icon */}
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCartDrawerOpen(true)}
+              className="relative flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-2.5 rounded-xl text-xs transition lg:hidden"
+            >
+              <span>🛒 {t.basketTitle}</span>
+              <span className="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                {totalBasketUnits}
+              </span>
+            </button>
             <Link
               href="/cart"
-              className="relative flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-2.5 rounded-xl text-xs transition"
+              className="relative hidden lg:flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-2.5 rounded-xl text-xs transition"
             >
               <span>🛒 {t.basketTitle}</span>
               <span className="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center">
@@ -176,21 +209,55 @@ export default function DynamicNavbar() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-4 border-t border-gray-200 text-center text-xs font-bold">
-            <Link
-              href="/account"
-              className="bg-white border border-gray-200 py-2.5 rounded-xl text-gray-700"
-            >
-              👤 Dashboard
-            </Link>
-            <Link
-              href="/admin"
-              className="bg-orange-50 text-orange-600 py-2.5 rounded-xl"
-            >
-              ⚙️ Admin Panel
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/account"
+                  className="bg-white border border-gray-200 py-2.5 rounded-xl text-gray-700"
+                >
+                  👤 Dashboard
+                </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="bg-orange-50 text-orange-600 py-2.5 rounded-xl"
+                  >
+                    ⚙️ Admin Panel
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    logout();
+                    router.push("/");
+                  }}
+                  className="col-span-2 bg-red-50 text-red-600 py-2.5 rounded-xl border border-red-100"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="bg-white border border-gray-200 py-2.5 rounded-xl text-gray-700"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="bg-[#0B1528] text-white py-2.5 rounded-xl"
+                >
+                  Register
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
+      <CartDrawer
+        isOpen={cartDrawerOpen}
+        onClose={() => setCartDrawerOpen(false)}
+      />
     </header>
   );
 }

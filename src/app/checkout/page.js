@@ -2,8 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppEngine, TARGET_REGIONS } from "@/context/AppContext";
 import { useTranslationEngine } from "@/context/LanguageContext";
+import { toast } from "sonner";
+import { checkoutSchema } from "@/lib/validation";
 
 const PROMO_CODES_REGISTRY = {
   MERKATO20: 0.2,
@@ -15,10 +19,19 @@ export default function CheckoutPage() {
     useAppEngine();
   const { t } = useTranslationEngine();
 
-  const [consigneeName, setConsigneeName] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [cityName, setCityName] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      consigneeName: "",
+      contactPhone: "",
+      streetAddress: "",
+      cityName: "",
+    },
+  });
 
   const [promoInput, setPromoInput] = useState("");
   const [activeDiscountRatio, setActiveDiscountRatio] = useState(0);
@@ -31,7 +44,7 @@ export default function CheckoutPage() {
   const [orderConfirmation, setOrderConfirmation] = useState(null);
 
   const itemsSubtotal = cart.reduce(
-    (acc, item) => acc + (item.activePrice || item.price) * item.quantity,
+    (acc, item) => acc + (item.activePrice ?? item.price) * item.quantity,
     0,
   );
   const discountDeduction = itemsSubtotal * activeDiscountRatio;
@@ -64,15 +77,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleCheckoutSubmission = async (e) => {
-    e.preventDefault();
+  const handleCheckoutSubmission = async (formData) => {
     if (cart.length === 0) return;
-    if (!consigneeName || !contactPhone || !streetAddress || !cityName) {
-      alert(
-        "Please populate all mandatory shipping destination delivery parameters.",
-      );
-      return;
-    }
 
     setIsProcessing(true);
 
@@ -81,14 +87,14 @@ export default function CheckoutPage() {
 
       setOrderConfirmation({
         trackingNumber: `MK-ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-        recipient: consigneeName,
+        recipient: formData.consigneeName,
         totalCharged: grandTotalSummaryAmount,
         destinationZone: activeRegion?.name || "Global Node",
         currencySymbol: activeRegion?.symbol || "$",
       });
       if (clearCart) clearCart();
     } catch (err) {
-      alert("Fulfillment pipeline network timeout error.");
+      toast.error("Fulfillment pipeline network timeout error.");
     } finally {
       setIsProcessing(false);
     }
@@ -187,9 +193,19 @@ export default function CheckoutPage() {
                     className="flex items-center justify-between gap-4 pt-4 first:pt-0 text-xs font-medium"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-3xl bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-gray-100">
-                        {item.images?.[0] || "📦"}
-                      </span>
+                      <div className="bg-slate-50 w-12 h-12 rounded-xl border border-gray-100 shrink-0 overflow-hidden">
+                        {item.images?.[0] ? (
+                          <img
+                            src={item.images[0]}
+                            alt={item.name || "Product"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center text-2xl text-gray-300 w-full h-full">
+                            📦
+                          </div>
+                        )}
+                      </div>
                       <div className="min-w-0">
                         <p className="font-bold text-slate-800 truncate">
                           {item.name}
@@ -228,7 +244,7 @@ export default function CheckoutPage() {
                       <span className="font-bold font-mono text-slate-950 min-w-[60px] text-right">
                         {activeRegion?.symbol || "$"}
                         {(
-                          (item.activePrice || item.price) * item.quantity
+                          (item.activePrice ?? item.price) * item.quantity
                         ).toFixed(2)}
                       </span>
                       <button
@@ -245,10 +261,9 @@ export default function CheckoutPage() {
             )}
           </section>
 
-          {/* የማከፋፈያ አድራሻ ፎርም (Shipping Form Component) */}
           <form
             id="checkout-core-form"
-            onSubmit={handleCheckoutSubmission}
+            onSubmit={handleSubmit(handleCheckoutSubmission)}
             className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4"
           >
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5 font-mono">
@@ -260,21 +275,23 @@ export default function CheckoutPage() {
                 <label className="text-gray-400">Consignee Full Name *</label>
                 <input
                   type="text"
-                  required
-                  value={consigneeName}
-                  onChange={(e) => setConsigneeName(e.target.value)}
+                  {...register("consigneeName")}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
                 />
+                {errors.consigneeName && (
+                  <p className="text-red-500 text-[10px] font-medium">{errors.consigneeName.message}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-gray-400">Contact Phone Number *</label>
                 <input
                   type="tel"
-                  required
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
+                  {...register("contactPhone")}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 font-mono"
                 />
+                {errors.contactPhone && (
+                  <p className="text-red-500 text-[10px] font-medium">{errors.contactPhone.message}</p>
+                )}
               </div>
             </div>
 
@@ -283,25 +300,27 @@ export default function CheckoutPage() {
                 <label className="text-gray-400">Street Address *</label>
                 <input
                   type="text"
-                  required
-                  value={streetAddress}
-                  onChange={(e) => setStreetAddress(e.target.value)}
+                  {...register("streetAddress")}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
                 />
+                {errors.streetAddress && (
+                  <p className="text-red-500 text-[10px] font-medium">{errors.streetAddress.message}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-gray-400">City / Township *</label>
                 <input
                   type="text"
-                  required
-                  value={cityName}
-                  onChange={(e) => setCityName(e.target.value)}
+                  {...register("cityName")}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
                 />
+                {errors.cityName && (
+                  <p className="text-red-500 text-[10px] font-medium">{errors.cityName.message}</p>
+                )}
               </div>
             </div>
 
-            {/* የክፍያ አማራጮች (Payment Gateway Selection) */}
+            {/* Payment Gateway Selection */}
             <div className="pt-4 border-t border-gray-50 space-y-2">
               <label className="text-xs font-black uppercase text-gray-400 tracking-wider block font-mono">
                 Payment Gateway Core
@@ -326,9 +345,9 @@ export default function CheckoutPage() {
           </form>
         </div>
 
-        {/* ቀኝ ክፍል፡ የኩፖን እና የፋይናንስ ማጠቃለያ ሰንጠረዥ */}
+        {/* Order Summary Sidebar */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-          {/* የኩፖን ሳጥን */}
+          {/* Promo Code Form */}
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-3">
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider font-mono">
               Voucher Campaign Validator
@@ -357,7 +376,7 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {/* የፋይናንስ ማጠቃለያ ሰንጠረዥ (Financial Ledger) */}
+          {/* Order Summary */}
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider font-mono">
               Financial Clearance Ledger

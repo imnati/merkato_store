@@ -1,9 +1,11 @@
 "use client";
+
 import React, { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import DynamicNavbar from "@/components/DynamicNavbar";
 import DynamicFooter from "@/components/DynamicFooter";
 import ProductCard from "@/components/ProductCard";
+import ProductCardSkeleton from "@/components/ProductCardSkeleton";
 import { useAppEngine } from "@/context/AppContext";
 import { useTranslationEngine } from "@/context/LanguageContext";
 import Link from "next/link";
@@ -16,6 +18,9 @@ function HomepageContent() {
     updateCartQty,
     removeFromCart,
     activeRegion,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
   } = useAppEngine();
   const { t } = useTranslationEngine();
   const router = useRouter();
@@ -56,7 +61,6 @@ function HomepageContent() {
       .replace(/[^a-z0-9]/g, "");
   };
 
-  // 🔍 Multi-Tier Filtering Logic Loop
   const processedFilteredProducts = (products || []).filter((p) => {
     const matchesSearch =
       p?.name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -71,16 +75,14 @@ function HomepageContent() {
   });
 
   const totalCost = (cart || []).reduce(
-    (sum, item) => sum + (item.activePrice || item.price || 0) * item.quantity,
+    (sum, item) => sum + (item.activePrice ?? item.price ?? 0) * item.quantity,
     0,
   );
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8fafc]">
-      {/* Platform Navigation Header Strip */}
       <DynamicNavbar />
 
-      {/* Main Structural Viewport Grid Frame */}
       <main className="max-w-[1400px] mx-auto px-4 py-8 w-full sm:px-6 lg:px-8 grow space-y-8">
         {/* 🔥 PROMOTION BANNER */}
         <section className="bg-gradient-to-r from-[#0D1E3A] via-[#112952] to-[#0A172E] rounded-3xl p-12 text-center text-white shadow-xl border border-slate-800 animate-fade-in">
@@ -124,11 +126,9 @@ function HomepageContent() {
           >
             {processedFilteredProducts.length === 0 ? (
               <div className="col-span-full py-20 text-center text-sm font-semibold text-gray-400 bg-white border border-dashed border-gray-200 rounded-2xl p-4 shadow-inner">
-                ⚠️ በምድብ &quot;
-                <span className="text-orange-600 font-bold uppercase">
-                  {activeCategory}
-                </span>
-                &quot; ስር የተመዘገበ ምንም አይነት እቃ አልተገኘም።
+                {searchFilter
+                  ? t.emptySearch
+                  : t.emptyHomeCategory.replace("{category}", activeCategory)}
               </div>
             ) : (
               processedFilteredProducts.map((p) => (
@@ -136,6 +136,14 @@ function HomepageContent() {
                   key={p.id}
                   product={p}
                   onAddToCart={addToCart}
+                  onToggleWishlist={(product) => {
+                    if (isInWishlist(product.id)) {
+                      removeFromWishlist(product.id);
+                    } else {
+                      addToWishlist(product);
+                    }
+                  }}
+                  isWishlisted={isInWishlist(p.id)}
                   symbol={activeRegion?.symbol || "د.إ"}
                 />
               ))
@@ -245,8 +253,12 @@ export default function HomepageFeed() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-xs font-mono text-slate-400 animate-pulse">
-          Loading Marketplace Interface Pipeline...
+        <div className="max-w-[1400px] mx-auto px-4 py-8 w-full sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       }
     >

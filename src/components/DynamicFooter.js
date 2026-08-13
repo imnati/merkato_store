@@ -9,9 +9,7 @@ export default function DynamicFooter() {
     <footer className="bg-[#0B1528] text-gray-400 text-xs py-8 border-t border-gray-900 mt-auto">
       <div className="max-w-7xl mx-auto px-4 text-center space-y-2 sm:px-6 lg:px-8">
         <p className="transition-all duration-200">
-          {
-            "© 2026 Merkato Store Marketplace . All multi-region routes secured."
-          }
+          {t.footerCopy}
         </p>
       </div>
     </footer>

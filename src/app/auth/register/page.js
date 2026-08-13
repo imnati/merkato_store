@@ -2,8 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAppEngine } from "@/context/AppContext";
+import { toast } from "sonner";
+import { authApi } from "@/lib/api";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { login } = useAppEngine();
   const [fullName, setFullName] = useState("");
   const [identityEmail, setIdentityEmail] = useState("");
   const [securePassword, setSecurePassword] = useState("");
@@ -58,11 +64,12 @@ export default function RegisterPage() {
     }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const data = await authApi.register(fullName, identityEmail, securePassword, []);
+      login(data, data.token);
       setSuccessStatus(true);
     } catch (err) {
       setErrorStatus(
-        "Connection timeout to the registration pipeline routing gateway.",
+        err.message || "Connection timeout to the registration pipeline routing gateway.",
       );
     } finally {
       setIsProvisioning(false);
@@ -85,12 +92,12 @@ export default function RegisterPage() {
               parameters successfully. Your profile enclave has initialized.
             </p>
           </div>
-          <Link
-            href="/auth/login"
+          <button
+            onClick={() => router.push("/")}
             className="inline-block w-full bg-[#0B1528] hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider py-4 rounded-xl transition shadow-md"
           >
-            Advance to Authorization Portal
-          </Link>
+            Advance to Marketplace
+          </button>
         </div>
       </div>
     );
@@ -107,14 +114,14 @@ export default function RegisterPage() {
             Configure profile constants to log a regional marketplace entry.
           </p>
         </div>
-        \
+        
         {errorStatus && (
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-xs p-3.5 rounded-xl font-semibold leading-relaxed">
             ⚠️ {errorStatus}
           </div>
         )}
         <form className="space-y-4" onSubmit={handleOnboardingSubmit}>
-          \
+          
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
               Full Identity Name
@@ -128,7 +135,7 @@ export default function RegisterPage() {
               required
             />
           </div>
-          \
+          
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
               Account Email Address

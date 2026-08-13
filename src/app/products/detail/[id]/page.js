@@ -11,10 +11,14 @@ export default function SpecificationsDesk() {
   const { products, addToCart, activeRegion } = useAppEngine();
   const { t } = useTranslationEngine();
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const [imgError, setImgError] = useState(false);
 
   const product = products.find((p) => p.id === id) || products[0];
 
   const isOutOfStock = product?.status?.toLowerCase() === "out of stock";
+
+  const fallbackImage =
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&auto=format";
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -22,10 +26,19 @@ export default function SpecificationsDesk() {
 
       <main className="max-w-5xl mx-auto px-4 py-12 w-full sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-start flex-grow">
         <div className="space-y-4">
-          <div className="bg-white border border-gray-100 rounded-3xl aspect-square flex items-center justify-center text-8xl shadow-sm relative overflow-hidden">
-            <span className="select-none">
-              {product?.images?.[galleryIdx] || "📦"}
-            </span>
+          <div className="bg-white border border-gray-100 rounded-3xl aspect-square relative overflow-hidden shadow-sm">
+            {!imgError && product?.images?.[galleryIdx] ? (
+              <img
+                src={product.images[galleryIdx]}
+                alt={product?.name || "Product image"}
+                className="w-full h-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="flex items-center justify-center text-8xl text-gray-300">
+                📦
+              </div>
+            )}
 
             <span
               className={`absolute top-4 right-4 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase ${
@@ -42,14 +55,21 @@ export default function SpecificationsDesk() {
             {product?.images?.map((img, idx) => (
               <button
                 key={idx}
-                onClick={() => setGalleryIdx(idx)}
-                className={`w-12 h-12 rounded-xl text-xl border transition-all ${
+                onClick={() => {
+                  setGalleryIdx(idx);
+                  setImgError(false);
+                }}
+                className={`w-12 h-12 rounded-xl border transition-all overflow-hidden ${
                   galleryIdx === idx
-                    ? "border-emerald-600 bg-emerald-50 scale-105 shadow-sm"
-                    : "bg-white border-gray-200 hover:bg-gray-50"
+                    ? "border-emerald-600 scale-105 shadow-sm"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
-                {img}
+                <img
+                  src={img}
+                  alt={`${product?.name} view ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
               </button>
             ))}
           </div>
@@ -71,7 +91,7 @@ export default function SpecificationsDesk() {
 
           <div className="text-2xl font-black text-slate-900 font-mono">
             {activeRegion?.symbol || "$"}
-            {(product?.discountPrice || product?.price || 0).toFixed(2)}
+            {(product?.discountPrice ?? product?.price ?? 0).toFixed(2)}
           </div>
 
           <button

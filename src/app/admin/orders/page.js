@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useAppEngine } from "@/context/AppContext";
+import { toast } from "sonner";
+import ScrollableTable from "@/components/ScrollableTable";
 
 export default function AdminOrdersLogistics() {
   // 🛠️ MODIFIED: ማዘዣዎችን እና የደረጃ ለውጦችን በቀጥታ ከግሎባል ኮንቴክስት ጋር አገናኘን
@@ -53,9 +55,7 @@ export default function AdminOrdersLogistics() {
       setOrderHistory(updatedQueue);
     }
 
-    alert(
-      `🚚 Logistics Pipeline Updated: Order ${id} changed to "${targetStatus}".`,
-    );
+    toast.success(`Logistics Pipeline Updated: Order ${id} changed to "${targetStatus}".`);
   };
 
   return (
@@ -81,6 +81,7 @@ export default function AdminOrdersLogistics() {
         </div>
 
         {/* Multi-Region Consignments Ledger Data Spreadsheet Grid Table Component */}
+        <ScrollableTable>
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 overflow-x-auto custom-scrollbar">
           <table className="w-full border-collapse text-left text-xs font-medium min-w-[700px]">
             <thead>
@@ -192,6 +193,7 @@ export default function AdminOrdersLogistics() {
             </tbody>
           </table>
         </div>
+        </ScrollableTable>
       </div>
     </div>
   );

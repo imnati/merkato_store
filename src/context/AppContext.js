@@ -1,155 +1,10 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { productApi } from "@/lib/api";
 
 const AppContext = createContext();
 
-const MASTER_CATALOG_DATABASE = [
-  // 💻 1. Electronics Category Materials
-  {
-    id: "p1",
-    name: "AcousticMax Pro ANC Wireless Headphones",
-    brand: "AlphaSonic Labs",
-    category: "Electronics",
-    price: 349.0,
-    discountPrice: 289.0,
-    sku: "MK-EL-HDP-092",
-    images: ["🎧", "🎵", "🔋"],
-    status: "In Stock",
-  },
-  {
-    id: "p2",
-    name: "M2 Ultra Pro Laptop 16-inch",
-    brand: "Compute Core",
-    category: "Electronics",
-    price: 4500.0,
-    discountPrice: null,
-    sku: "MK-EL-LAP-402",
-    images: ["💻", "🖥️", "🎛️"],
-    status: "Low Stock",
-  },
-
-  // 🧥 2. Fashion & clothing Category Materials
-  {
-    id: "p3",
-    name: "Classic Denim Lightweight Casual Jacket",
-    brand: "VogueFit",
-    category: "Fashion & clothing",
-    price: 150.0,
-    discountPrice: 120.0,
-    sku: "MK-FA-JKT-103",
-    images: ["🧥", "👕", "👔"],
-    status: "In Stock",
-  },
-  {
-    id: "p6",
-    name: "Urban Streetwear Slim-Fit Cargo Pants",
-    brand: "VogueFit",
-    category: "Fashion & clothing",
-    price: 95.0,
-    discountPrice: 79.0,
-    sku: "MK-FA-PNT-106",
-    images: ["👖", "👟", "🎒"],
-    status: "In Stock",
-  },
-
-  // ☕ 3. Groceries Category Materials
-  {
-    id: "p4",
-    name: "Organic Arabica Coffee Beans (1KG Bag)",
-    brand: "HararGold",
-    category: "Groceries",
-    price: 34.0,
-    discountPrice: 29.5,
-    sku: "MK-GR-COF-881",
-    images: ["☕", "🌱", "📦"],
-    status: "In Stock",
-  },
-  {
-    id: "p7",
-    name: "Premium Cold-Pressed Extra Virgin Olive Oil",
-    brand: "Mediterranean",
-    category: "Groceries",
-    price: 18.5,
-    discountPrice: null,
-    sku: "MK-GR-OIL-887",
-    images: ["🍾", "🥗", "🍯"],
-    status: "In Stock",
-  },
-
-  // 🧴 4. Beauty products Category Materials
-  {
-    id: "p5",
-    name: "Hydrating Hyaluronic Acid Facial Serum",
-    brand: "GlowGlow",
-    category: "Beauty products",
-    price: 45.0,
-    discountPrice: 38.0,
-    sku: "MK-BT-SER-505",
-    images: ["🧴", "💧", "🧪"],
-    status: "Out of Stock",
-  },
-  {
-    id: "p8",
-    name: "Rejuvenating Vitamin C Brightening Cream",
-    brand: "GlowGlow",
-    category: "Beauty products",
-    price: 55.0,
-    discountPrice: 49.0,
-    sku: "MK-BT-CRM-508",
-    images: ["🧴", "✨", "☀️"],
-    status: "In Stock",
-  },
-
-  // 🧹 5. Household items Category Materials
-  {
-    id: "p9",
-    name: "UltraClean Robotic Vacuum & Mop Console",
-    brand: "HomeBot",
-    category: "Household items",
-    price: 899.0,
-    discountPrice: 749.0,
-    sku: "MK-HH-VAC-909",
-    images: ["🧹", "🤖", "🏠"],
-    status: "In Stock",
-  },
-  {
-    id: "p10",
-    name: "Ergonomic Memory Foam Orthopedic Pillow",
-    brand: "RestEasy",
-    category: "Household items",
-    price: 65.0,
-    discountPrice: null,
-    sku: "MK-HH-PIL-910",
-    images: ["🛏️", "💤", "☁️"],
-    status: "In Stock",
-  },
-
-  // ⌚ 6. Accessories Category Materials
-  {
-    id: "p11",
-    name: "Titanium Sports Smartwatch v4",
-    brand: "ChronoTech",
-    category: "Accessories",
-    price: 399.0,
-    discountPrice: 345.0,
-    sku: "MK-AC-WTC-711",
-    images: ["⌚", "🏃", "💓"],
-    status: "Low Stock",
-  },
-  {
-    id: "p12",
-    name: "Classic Polarized Aviator Sunglasses",
-    brand: "VogueFit",
-    category: "Accessories",
-    price: 110.0,
-    discountPrice: 85.0,
-    sku: "MK-AC-SUN-712",
-    images: ["🕶️", "☀️", "🏖️"],
-    status: "In Stock",
-  },
-];
-
-export const TARGET_REGIONS = [
+const TARGET_REGIONS = [
   {
     name: "Nigeria",
     code: "NG",
@@ -173,7 +28,7 @@ export const TARGET_REGIONS = [
     code: "ET",
     currency: "ETB",
     symbol: "Br",
-    baseFreight: 20.0,
+    baseFreight: 22.0,
     taxRate: 0.15,
     flag: "🇪🇹",
   },
@@ -190,7 +45,7 @@ export const TARGET_REGIONS = [
     name: "Saudi Arabia",
     code: "SA",
     currency: "SAR",
-    symbol: "ر.ስ",
+    symbol: "ر.س",
     baseFreight: 22.0,
     taxRate: 0.15,
     flag: "🇸🇦",
@@ -207,38 +62,105 @@ export const TARGET_REGIONS = [
 ];
 
 export function AppProvider({ children }) {
-  const [products, setProducts] = useState(MASTER_CATALOG_DATABASE);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState([]);
+  const [activeRegion, setActiveRegion] = useState(TARGET_REGIONS[3]);
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [orderHistory, setOrderHistory] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
 
-  const [cart, setCart] = useState(() => {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const cachedUser = localStorage.getItem("MERKATO_USER");
+      const cachedToken = localStorage.getItem("MERKATO_TOKEN");
+      if (cachedUser) {
+        try {
+          setUser(JSON.parse(cachedUser));
+        } catch {}
+      }
+      if (cachedToken) {
+        setToken(cachedToken);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await productApi.getAll();
+        setProducts(data || []);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const cachedCart = localStorage.getItem("MERKATO_CART");
-      return cachedCart ? JSON.parse(cachedCart) : [];
-    }
-    return [];
-  });
-
-  const [activeRegion, setActiveRegion] = useState(() => {
-    if (typeof window !== "undefined") {
+      if (cachedCart) {
+        try {
+          setCart(JSON.parse(cachedCart));
+        } catch {}
+      }
       const cachedRegion = localStorage.getItem("MERKATO_REGION");
-      return cachedRegion ? JSON.parse(cachedRegion) : TARGET_REGIONS[3];
+      if (cachedRegion) {
+        try {
+          const parsed = JSON.parse(cachedRegion);
+          const match = TARGET_REGIONS.find((r) => r.code === parsed.code);
+          if (match) setActiveRegion(match);
+        } catch {}
+      }
+      const cachedWishlist = localStorage.getItem("MERKATO_WISHLIST");
+      if (cachedWishlist) {
+        try {
+          setWishlist(JSON.parse(cachedWishlist));
+        } catch {}
+      }
     }
-    return TARGET_REGIONS[3];
-  });
-
-  const [user, setUser] = useState({
-    name: "Abebe Kebede",
-    email: "abebe@merkato.com",
-    role: "admin",
-    addresses: ["Dubai Marina, UAE", "Bole Sub-City, Addis Ababa, Ethiopia"],
-  });
-
-  const [orderHistory, setOrderHistory] = useState([]);
+  }, []);
 
   const syncCart = (updatedCart) => {
     setCart(updatedCart);
     if (typeof window !== "undefined") {
       localStorage.setItem("MERKATO_CART", JSON.stringify(updatedCart));
     }
+  };
+
+  const syncWishlist = (updatedWishlist) => {
+    setWishlist(updatedWishlist);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("MERKATO_WISHLIST", JSON.stringify(updatedWishlist));
+    }
+  };
+
+  const addToWishlist = (product) => {
+    const existing = wishlist.find((item) => item.id === product.id);
+    if (!existing) {
+      syncWishlist([
+        ...wishlist,
+        {
+          id: product.id,
+          name: product.name,
+          brand: product.brand,
+          price: product.discountPrice || product.price,
+          img: product.images?.[0] || "",
+        },
+      ]);
+    }
+  };
+
+  const removeFromWishlist = (id) => {
+    syncWishlist(wishlist.filter((item) => item.id !== id));
+  };
+
+  const isInWishlist = (id) => {
+    return wishlist.some((item) => item.id === id);
   };
 
   const addToCart = (product) => {
@@ -293,11 +215,30 @@ export function AppProvider({ children }) {
     syncCart(updatedCartPrices);
   };
 
+  const login = (userData, authToken) => {
+    setUser(userData);
+    setToken(authToken);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("MERKATO_USER", JSON.stringify(userData));
+      localStorage.setItem("MERKATO_TOKEN", authToken);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("MERKATO_USER");
+      localStorage.removeItem("MERKATO_TOKEN");
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
         products,
         setProducts,
+        loading,
         cart,
         addToCart,
         updateCartQty,
@@ -306,8 +247,16 @@ export function AppProvider({ children }) {
         updateRegionSelection,
         user,
         setUser,
+        token,
+        login,
+        logout,
+        isAuthenticated: !!user?.email,
         orderHistory,
         setOrderHistory,
+        wishlist,
+        addToWishlist,
+        removeFromWishlist,
+        isInWishlist,
       }}
     >
       {children}
@@ -316,3 +265,5 @@ export function AppProvider({ children }) {
 }
 
 export const useAppEngine = () => useContext(AppContext);
+
+export { TARGET_REGIONS };

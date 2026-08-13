@@ -4,10 +4,13 @@ import { useSearchParams } from "next/navigation";
 import DynamicNavbar from "@/components/DynamicNavbar";
 import DynamicFooter from "@/components/DynamicFooter";
 import ProductCard from "@/components/ProductCard";
+import ProductCardSkeleton from "@/components/ProductCardSkeleton";
 import { useAppEngine } from "@/context/AppContext";
+import { useTranslationEngine } from "@/context/LanguageContext";
 
 function CatalogGridContent() {
-  const { products, addToCart, activeRegion } = useAppEngine();
+  const { products, addToCart, activeRegion, addToWishlist, removeFromWishlist, isInWishlist } = useAppEngine();
+  const { t } = useTranslationEngine();
   const [selectedCat, setSelectedCat] = useState("All");
 
   const searchParams = useSearchParams();
@@ -56,7 +59,7 @@ function CatalogGridContent() {
         <section className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {filtered.length === 0 ? (
             <div className="col-span-full py-16 text-center text-sm font-medium text-gray-400 border border-dashed border-gray-200 rounded-2xl bg-white">
-              በመረጡት ምድብ ወይም የፍለጋ ቃል መሰረት ምንም አይነት እቃ አልተገኘም።
+              {t.emptySearch || t.emptyCategory}
             </div>
           ) : (
             filtered.map((p) => (
@@ -64,6 +67,14 @@ function CatalogGridContent() {
                 key={p.id}
                 product={p}
                 onAddToCart={addToCart}
+                onToggleWishlist={(product) => {
+                  if (isInWishlist(product.id)) {
+                    removeFromWishlist(product.id);
+                  } else {
+                    addToWishlist(product);
+                  }
+                }}
+                isWishlisted={isInWishlist(p.id)}
                 symbol={activeRegion.symbol}
               />
             ))
@@ -80,8 +91,12 @@ export default function MasterCatalogGrid() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-xs font-mono text-slate-400">
-          Syncing Catalog Infrastructure Pipeline...
+        <div className="max-w-7xl mx-auto px-4 py-8 w-full sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       }
     >

@@ -2,10 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppEngine } from "@/context/AppContext";
+import { toast } from "sonner";
 
 export default function AccountDashboardPage() {
-  const { user, orderHistory, activeRegion } = useAppEngine();
+  const router = useRouter();
+  const { user, orderHistory, activeRegion, wishlist, removeFromWishlist, logout } = useAppEngine();
 
   // Dashboard Tab Configuration: 'orders' | 'profile' | 'wishlist' | 'reviews'
   const [activeTab, setActiveTab] = useState("orders");
@@ -22,30 +25,13 @@ export default function AccountDashboardPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
 
-  const [wishlistItems, setWishlistItems] = useState([
-    {
-      id: "w1",
-      name: "M2 Ultra Pro Laptop 16-inch",
-      brand: "Compute Core",
-      price: 4500.0,
-      img: "💻",
-    },
-    {
-      id: "w2",
-      name: "OLED Touch Display Smartphone",
-      brand: "AlphaSonic Labs",
-      price: 1200.0,
-      img: "📱",
-    },
-  ]);
-
   // Handler Functions
   const handleAddAddress = (e) => {
     e.preventDefault();
     if (!newAddressInput.trim()) return;
     setShippingAddresses([...shippingAddresses, newAddressInput.trim()]);
     setNewAddressInput("");
-    alert("✓ Saved address list updated successfully.");
+    toast.success("Saved address list updated successfully.");
   };
 
   const handleRemoveAddress = (index) => {
@@ -53,7 +39,7 @@ export default function AccountDashboardPage() {
   };
 
   const handleRemoveWishlist = (id) => {
-    setWishlistItems(wishlistItems.filter((item) => item.id !== id));
+    removeFromWishlist(id);
   };
 
   const handleReviewSubmit = (e) => {
@@ -98,6 +84,15 @@ export default function AccountDashboardPage() {
             {user?.email || "abebe@merkato.com"} | Market:{" "}
             {activeRegion?.name || "Ethiopia"}
           </p>
+          <button
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+            className="mt-2 text-[10px] font-black bg-red-500/20 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/30 transition"
+          >
+            Logout
+          </button>
         </div>
         <div className="bg-slate-900 px-4 py-2 rounded-xl text-xs font-mono font-bold flex gap-4 text-slate-300">
           <div>
@@ -113,7 +108,7 @@ export default function AccountDashboardPage() {
           <div>
             Wishlist:{" "}
             <span className="text-white font-black">
-              {wishlistItems.length}
+              {wishlist.length}
             </span>
           </div>
         </div>
@@ -139,7 +134,7 @@ export default function AccountDashboardPage() {
             onClick={() => setActiveTab("wishlist")}
             className={`w-full text-left px-4 py-2.5 rounded-lg ${activeTab === "wishlist" ? "bg-[#0B1528] text-white shadow-sm" : "hover:bg-gray-200"}`}
           >
-            ❤️ Saved Wishlist ({wishlistItems.length})
+            ❤️ Saved Wishlist ({wishlist.length})
           </button>
           <button
             onClick={() => setActiveTab("reviews")}
@@ -259,15 +254,25 @@ export default function AccountDashboardPage() {
                 Bookmarked Favorites Wishlist
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold">
-                {wishlistItems.map((item) => (
+                {wishlist.map((item) => (
                   <div
                     key={item.id}
                     className="border border-gray-100 bg-gray-50/50 rounded-xl p-3 flex items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-2xl bg-white w-10 h-10 border rounded-lg flex items-center justify-center shadow-inner">
-                        {item.img}
-                      </span>
+                      <div className="bg-white w-10 h-10 border rounded-lg shadow-inner overflow-hidden shrink-0">
+                        {item.img ? (
+                          <img
+                            src={item.img}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center text-xl text-gray-300 w-full h-full">
+                            📦
+                          </div>
+                        )}
+                      </div>
                       <div className="min-w-0">
                         <p className="font-bold text-slate-800 truncate">
                           {item.name}

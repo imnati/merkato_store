@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAppEngine } from "@/context/AppContext";
+import { toast } from "sonner";
+import ScrollableTable from "@/components/ScrollableTable";
 
 export default function AdminProductsDesk() {
   const { products, setProducts, activeRegion } = useAppEngine();
@@ -15,11 +17,11 @@ export default function AdminProductsDesk() {
   const [formPrice, setFormPrice] = useState("");
   const [formStock, setFormStock] = useState("");
 
-  // Form Submission Create Routine (CRUD - Create)
+  // Create product
   const handleCreateProduct = (e) => {
     e.preventDefault();
     if (!formName || !formSku || !formBrand || !formPrice || !formStock) {
-      alert("Please populate all required validation parameter fields.");
+      toast.error("Please populate all required validation parameter fields.");
       return;
     }
 
@@ -33,25 +35,29 @@ export default function AdminProductsDesk() {
       category: formCategory,
       price: parseFloat(formPrice),
       discountPrice: null,
-      images: ["📦", "⚙️", "🚚"], // Asset placeholder mapping arrays
-      stockQuantity: stockNum, // 🛠️ MODIFIED: በሰንጠረዡ ማሳያ መዋቅር መሰረት ወደ stockQuantity ተስተካክሏል
+      images: [
+        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&auto=format",
+        "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=400&fit=crop&auto=format",
+        "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop&auto=format",
+      ],
+      stockQuantity: stockNum,
       status: stockNum <= 5 ? "Low Stock" : "In Stock",
     };
 
-    // Safe state update logic checking if products collection exists
+    // Safe state update
     const currentProducts = products || [];
     setProducts([...currentProducts, freshItem]);
 
-    // Clear Input Parameters Registers
+    // Clear form fields
     setFormName("");
     setFormSku("");
     setFormBrand("");
     setFormPrice("");
     setFormStock("");
-    alert("✓ Product document record created cleanly in database collection.");
+    toast.success("Product created successfully.");
   };
 
-  // Document Destruction Routine (CRUD - Delete)
+  // Delete product
   const handleDestroyProduct = (id) => {
     if (
       confirm(
@@ -60,7 +66,7 @@ export default function AdminProductsDesk() {
     ) {
       const currentProducts = products || [];
       setProducts(currentProducts.filter((p) => p.id !== id));
-      alert("🗑️ Document removed from active cluster storage layers.");
+      toast.success("Product deleted.");
     }
   };
 
@@ -85,7 +91,7 @@ export default function AdminProductsDesk() {
         </Link>
       </div>
 
-      {/* Main Splitting Management Grid Framework Area */}
+      {/* Product Creation Form */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Side: Create Entry Data Form Container Block Component */}
         <aside className="lg:col-span-4 bg-white border border-slate-100 p-6 rounded-2xl shadow-sm space-y-4">
@@ -195,8 +201,9 @@ export default function AdminProductsDesk() {
           </form>
         </aside>
 
-        {/* Right Side: Active Inventory Matrix Ledger Data Spreadsheet Table View */}
-        <section className="lg:col-span-8 bg-white border border-slate-100 rounded-2xl shadow-sm p-6 overflow-x-auto custom-scrollbar">
+        {/* Inventory Table */}
+        <ScrollableTable>
+        <section className="lg:col-span-8 bg-white border border-slate-100 rounded-2xl shadow-sm p-6">
           <h3 className="text-xs font-black uppercase text-slate-800 font-mono tracking-wider border-b pb-2 mb-4">
             📊 Current Catalog Inventory Collection Matrix
           </h3>
@@ -232,19 +239,17 @@ export default function AdminProductsDesk() {
                     </td>
                     <td className="p-3 text-right font-mono font-black text-slate-900">
                       {activeRegion?.symbol || "$"}
-                      {(product.discountPrice || product.price || 0).toFixed(2)}
+                      {(product.discountPrice ?? product.price ?? 0).toFixed(2)}
                     </td>
                     <td className="p-3 text-center font-mono font-bold text-gray-500">
-                      {/* 🛠️ MODIFIED: ሁለቱንም የዳታ ፎርማቶች በአግባቡ እንዲያነብ ተደርጓል */}
+                      {/* Stock column fallback */}
                       {product.stockQuantity ?? product.stock ?? 0} units
                     </td>
                     <td className="p-3 text-right whitespace-nowrap space-x-3">
                       <button
                         type="button"
                         onClick={() =>
-                          alert(
-                            `Modify callback hook initialized for item ID: ${product.id}`,
-                          )
+                          toast.info(`Modify item: ${product.id}`)
                         }
                         className="text-blue-500 hover:text-blue-700 font-bold transition"
                       >
@@ -274,6 +279,7 @@ export default function AdminProductsDesk() {
             </tbody>
           </table>
         </section>
+        </ScrollableTable>
       </div>
     </div>
   );

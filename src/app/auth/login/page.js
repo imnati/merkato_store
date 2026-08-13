@@ -2,12 +2,19 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAppEngine } from "@/context/AppContext";
+import { toast } from "sonner";
+import { authApi } from "@/lib/api";
 
 export default function LoginPage() {
   const [identityEmail, setIdentityEmail] = useState("");
   const [credentialPassword, setCredentialPassword] = useState("");
   const [errorStatusMessage, setErrorStatusMessage] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const { login } = useAppEngine();
+  const router = useRouter();
 
   const handleAuthenticationSubmit = async (e) => {
     e.preventDefault();
@@ -31,24 +38,13 @@ export default function LoginPage() {
     }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (
-        identityEmail.startsWith("admin") ||
-        credentialPassword === "123456"
-      ) {
-        alert(
-          "✓ Authentication Complete! Signed access token mapped securely onto active profile environment.",
-        );
-        window.location.href = "/";
-      } else {
-        setErrorStatusMessage(
-          "Access Denied: Invalid security signature credentials matching parameters array.",
-        );
-      }
+      const data = await authApi.login(identityEmail, credentialPassword);
+      login(data, data.token);
+      toast.success("Authentication Complete! Signed access token mapped securely onto active profile environment.");
+      router.push("/");
     } catch (err) {
       setErrorStatusMessage(
-        "Connection timeout to user profile authorization router database.",
+        err.message || "Access Denied: Invalid security signature credentials matching parameters array.",
       );
     } finally {
       setIsAuthenticating(false);
