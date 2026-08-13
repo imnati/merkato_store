@@ -2,8 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useTranslationEngine } from "@/context/LanguageContext";
+import { AlertIcon } from "@/components/Icons";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslationEngine();
   const [identityEmail, setIdentityEmail] = useState("");
   const [successStatus, setSuccessStatus] = useState(false);
   const [errorStatus, setErrorStatus] = useState("");
@@ -19,7 +22,7 @@ export default function ForgotPasswordPage() {
       );
       setSuccessStatus(true);
     } catch {
-      setErrorStatus("Something went wrong. Please try again.");
+      setErrorStatus(t.tryAgain);
     } finally {
       setLoading(false);
     }
@@ -30,45 +33,42 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-xl p-8 sm:p-10 space-y-6 transition-all">
         <div className="text-center space-y-1">
           <h2 className="text-2xl font-black font-mono tracking-tight text-slate-900 uppercase">
-            Reset Password
+            {t.resetPassword}
           </h2>
           <p className="text-xs text-gray-400 font-medium">
-            Provide your account email to receive a recovery access token
-            payload.
+            {t.resetSubtitle}
           </p>
         </div>
 
         {errorStatus && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-xs p-3.5 rounded-xl font-semibold leading-relaxed">
-            ⚠️ {errorStatus}
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-xs p-3.5 rounded-xl font-semibold leading-relaxed flex items-start gap-2">
+            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-red-500" /> {errorStatus}
           </div>
         )}
 
         {successStatus ? (
           <div className="space-y-4 text-center animate-fade-in">
             <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs p-4 rounded-xl font-medium leading-relaxed">
-              🎉 **Recovery Request Dispatched!** An automated security
-              verification email payload has been routed to your communications
-              log. Please inspect your inbox instructions to clear parameters.
+              {t.recoverySent}
             </div>
             <Link
               href="/auth/login"
               className="w-full inline-block bg-[#0B1528] hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider py-4 rounded-xl shadow-md transition-all text-center"
             >
-              Return to Account Login Node
+              {t.returnToLogin}
             </Link>
           </div>
         ) : (
           <form className="space-y-4" onSubmit={handleRecoverySubmit}>
             <div>
               <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-                Account Email Address
+                {t.accountEmail}
               </label>
               <input
                 type="email"
                 value={identityEmail}
                 onChange={(e) => setIdentityEmail(e.target.value)}
-                placeholder="e.g. abebe@merkatostore.com"
+                placeholder={t.emailExample}
                 className="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-slate-800 placeholder-gray-400 font-medium"
                 required
               />
@@ -103,10 +103,10 @@ export default function ForgotPasswordPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                       />
                     </svg>
-                    <span>Dispatching Token Payload...</span>
+                    <span>{t.sendingResetLink}</span>
                   </>
                 ) : (
-                  "Request Reset Link"
+                  t.requestResetLink
                 )}
               </button>
             </div>

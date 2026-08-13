@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppEngine } from "@/context/AppContext";
 import { useTranslationEngine } from "@/context/LanguageContext";
+import ProductImage from "@/components/ProductImage";
+import { ClipboardIcon, CloseIcon, CartIcon, InboxIcon } from "@/components/Icons";
 import api from "@/lib/axios";
 
 const PROMO_CODES_REGISTRY = {
@@ -13,7 +15,7 @@ const PROMO_CODES_REGISTRY = {
 };
 
 export default function CheckoutPage() {
-  const { cart, updateCartQty, removeFromCart, activeRegion, clearCart } =
+  const { cart, updateCartQty, removeFromCart, activeRegion, formatPrice } =
     useAppEngine();
   const { t } = useTranslationEngine();
   const router = useRouter();
@@ -35,9 +37,7 @@ export default function CheckoutPage() {
     text: "",
     isError: false,
   });
-  const [paymentGateway, setPaymentGateway] = useState("stripe");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [orderConfirmation, setOrderConfirmation] = useState(null);
 
   const itemsSubtotal = cart.reduce(
     (acc, item) => acc + (item.activePrice || item.price) * item.quantity,
@@ -61,13 +61,13 @@ export default function CheckoutPage() {
     if (PROMO_CODES_REGISTRY[sanitizedToken]) {
       setActiveDiscountRatio(PROMO_CODES_REGISTRY[sanitizedToken]);
       setPromoMessage({
-        text: `✓ Code cleared! Deducting ${PROMO_CODES_REGISTRY[sanitizedToken] * 100}% off your base items subtotal.`,
+        text: t.promoApplied.replace("{n}", PROMO_CODES_REGISTRY[sanitizedToken] * 100),
         isError: false,
       });
     } else {
       setActiveDiscountRatio(0);
       setPromoMessage({
-        text: "⚠️ Provided coupon tracking parameters do not match active campaigns.",
+        text: t.promoInvalid,
         isError: true,
       });
     }
@@ -77,111 +77,62 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (cart.length === 0) return;
     if (!consigneeName || !contactPhone || !streetAddress || !cityName) {
-      alert("Please fill all shipping fields.");
+      alert(t.fillShipping);
       return;
     }
     setIsProcessing(true);
     try {
+      const rate = activeRegion?.exchangeRate || 1;
+      const currency = activeRegion?.currency || "USD";
       const { data } = await api.post("/payment/stripe/create-session", {
         items: [
           ...cart.map((item) => ({
             product: item._id || item.id,
             name: item.name,
-            price: item.activePrice || item.price,
+            price: (item.activePrice || item.price) * rate,
             quantity: item.quantity,
           })),
           ...(regionalFreightCost > 0 ? [{
             product: null,
-            name: "Cross-Border Freight Logistics",
-            price: regionalFreightCost,
+            name: "Shipping (freight)",
+            price: regionalFreightCost * rate,
             quantity: 1,
           }] : []),
           ...(computedRegionalTax > 0 ? [{
             product: null,
-            name: `Regional Tax (${(activeRegion?.taxRate || 0) * 100}%)`,
-            price: parseFloat(computedRegionalTax.toFixed(2)),
+            name: `Tax (${(activeRegion?.taxRate || 0) * 100}%)`,
+            price: parseFloat((computedRegionalTax * rate).toFixed(2)),
             quantity: 1,
           }] : []),
           ...(discountDeduction > 0 ? [{
             product: null,
-            name: `Promo Discount (${activeDiscountRatio * 100}% off)`,
-            price: -parseFloat(discountDeduction.toFixed(2)),
+            name: `Discount (${activeDiscountRatio * 100}% off)`,
+            price: -parseFloat((discountDeduction * rate).toFixed(2)),
             quantity: 1,
           }] : []),
         ],
+        currency,
+        exchangeRate: rate,
         destination: `${streetAddress}, ${cityName}, ${activeRegion?.name}`,
         courier: "Regional Freight",
+        discountRatio: activeDiscountRatio,
       });
       // Redirect to Stripe hosted checkout page
       window.location.href = data.url;
     } catch (err) {
-      alert(err.response?.data?.message || "Payment failed. Please try again.");
+      alert(err.response?.data?.message || t.paymentFailed);
       setIsProcessing(false);
     }
   };
-
-  if (orderConfirmation) {
-    return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto border border-emerald-100 animate-bounce">
-          ✓
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            Order Form Cleared Successfully
-          </h2>
-          <p className="text-xs text-gray-500 font-medium">
-            Your payment parameters were authorized securely. A notification
-            copy was logged.
-          </p>
-        </div>
-        <div className="bg-white border border-gray-100 p-5 rounded-2xl text-left text-xs font-semibold space-y-3 shadow-sm">
-          <div className="flex justify-between font-mono text-gray-400">
-            <span>Tracking Reference Code:</span>
-            <span className="text-slate-900 font-bold">
-              {orderConfirmation.trackingNumber}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Consignee Account:</span>
-            <span className="text-slate-900 font-bold">
-              {orderConfirmation.recipient}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Distribution Node Zone:</span>
-            <span className="text-slate-900 font-bold">
-              {orderConfirmation.destinationZone}
-            </span>
-          </div>
-          <hr className="border-gray-100" />
-          <div className="flex justify-between text-sm font-black">
-            <span className="text-slate-900">Total Settlement Invoiced:</span>
-            <span className="text-emerald-600">
-              {orderConfirmation.currencySymbol}
-              {orderConfirmation.totalCharged.toFixed(2)}
-            </span>
-          </div>
-        </div>
-        <Link
-          href="/"
-          className="inline-block w-full bg-[#0B1528] hover:bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md"
-        >
-          Return to Marketplace Showcase Home Feed
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 text-slate-800">
       <div className="border-b border-gray-200 pb-4 mb-8">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight uppercase">
-          Secure Transaction Node
+          {t.secureCheckout}
         </h1>
         <p className="text-xs text-gray-400 font-medium mt-1">
-          Provide distribution parameters, select payment gateways, and finalize
-          cross-border cargo clearance orders.
+          {t.checkoutSubtitle}
         </p>
       </div>
 
@@ -189,20 +140,22 @@ export default function CheckoutPage() {
         <div className="lg:col-span-7 space-y-6">
           <section className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5 font-mono">
-              📦 Shopping Cart Basket Items ({cart.length})
+              <CartIcon className="h-4 w-4 text-slate-400" /> {t.yourOrder} ({cart.length})
             </h3>
 
             {cart.length === 0 ? (
               <div className="text-center py-6 space-y-2">
-                <span className="text-2xl block">📥</span>
+                <span className="block mx-auto text-gray-300">
+                  <InboxIcon className="h-9 w-9" />
+                </span>
                 <p className="text-xs text-gray-400 font-medium">
-                  Your shopping cart inventory queue matches zero entries.
+                  {t.cartEmpty}
                 </p>
                 <Link
                   href="/"
                   className="inline-block text-xs font-bold text-emerald-600 hover:underline"
                 >
-                  Return to Storefront Catalog
+                  {t.returnToStore}
                 </Link>
               </div>
             ) : (
@@ -213,15 +166,19 @@ export default function CheckoutPage() {
                     className="flex items-center justify-between gap-4 pt-4 first:pt-0 text-xs font-medium"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-3xl bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-gray-100">
-                        {item.images?.[0] || "📦"}
+                      <span className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-gray-100 relative overflow-hidden">
+                        <ProductImage
+                          src={item.images?.[0] || "📦"}
+                          alt={item.name}
+                          emojiClassName="text-3xl"
+                        />
                       </span>
                       <div className="min-w-0">
                         <p className="font-bold text-slate-800 truncate">
                           {item.name}
                         </p>
                         <p className="text-gray-400 font-mono text-[10px] uppercase font-bold mt-0.5">
-                          SKU: {item.sku || "MK-GEN-000"}
+                          {t.skuLabel} {item.sku || "MK-GEN-000"}
                         </p>
                       </div>
                     </div>
@@ -252,17 +209,16 @@ export default function CheckoutPage() {
                       </div>
 
                       <span className="font-bold font-mono text-slate-950 min-w-15 text-right">
-                        {activeRegion?.symbol || "$"}
-                        {(
-                          (item.activePrice || item.price) * item.quantity
-                        ).toFixed(2)}
+                        {formatPrice(
+                          (item.activePrice || item.price) * item.quantity,
+                        )}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeFromCart(item.id)}
                         className="text-red-500 hover:text-red-700 font-bold px-1"
                       >
-                        ✕
+                        <CloseIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -277,12 +233,12 @@ export default function CheckoutPage() {
             className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4"
           >
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-1.5 font-mono">
-              📋 Shipping Destination Parameters
+              <ClipboardIcon className="h-4 w-4 text-slate-400" /> {t.shippingDetails}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold">
               <div className="space-y-1.5">
-                <label className="text-gray-400">Consignee Full Name *</label>
+                <label className="text-gray-400">{t.fullName}</label>
                 <input
                   type="text"
                   required
@@ -292,7 +248,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-gray-400">Contact Phone Number *</label>
+                <label className="text-gray-400">{t.phone}</label>
                 <input
                   type="tel"
                   required
@@ -305,7 +261,7 @@ export default function CheckoutPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-bold">
               <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-gray-400">Street Address *</label>
+                <label className="text-gray-400">{t.street}</label>
                 <input
                   type="text"
                   required
@@ -315,7 +271,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-gray-400">City / Township *</label>
+                <label className="text-gray-400">{t.city}</label>
                 <input
                   type="text"
                   required
@@ -325,40 +281,17 @@ export default function CheckoutPage() {
                 />
               </div>
             </div>
-
-            <div className="pt-4 border-t border-gray-50 space-y-2">
-              <label className="text-xs font-black uppercase text-gray-400 tracking-wider block font-mono">
-                Payment Gateway Core
-              </label>
-              <div className="grid grid-cols-2 gap-3 text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setPaymentGateway("stripe")}
-                  className={`p-4 rounded-xl border text-center transition-all ${paymentGateway === "stripe" ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"}`}
-                >
-                  💳 International Card (Stripe)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentGateway("local")}
-                  className={`p-4 rounded-xl border text-center transition-all ${paymentGateway === "local" ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"}`}
-                >
-                  🏦 Regional Mobile Banking Node
-                </button>
-              </div>
-            </div>
           </form>
         </div>
 
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-3">
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider font-mono">
-              Voucher Campaign Validator
-            </h3>
-            <form onSubmit={handleValidatePromoCode} className="flex gap-2">
+              {t.promoCode}
+            </h3>            <form onSubmit={handleValidatePromoCode} className="flex gap-2">
               <input
                 type="text"
-                placeholder="E.G. MERKATO20"
+                placeholder={t.promoPlaceholder}
                 value={promoInput}
                 onChange={(e) => setPromoInput(e.target.value)}
                 className="flex-1 bg-gray-50 border border-gray-200 text-xs font-mono rounded-xl px-4 py-3 focus:outline-none tracking-wider font-bold uppercase"
@@ -367,7 +300,7 @@ export default function CheckoutPage() {
                 type="submit"
                 className="bg-[#0B1528] text-white text-xs font-black px-5 rounded-xl hover:bg-slate-800 transition"
               >
-                Apply
+                {t.apply}
               </button>
             </form>
             {promoMessage.text && (
@@ -381,48 +314,42 @@ export default function CheckoutPage() {
 
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider font-mono">
-              Financial Clearance Ledger
+              {t.orderSummary}
             </h3>
             <div className="space-y-2.5 text-xs font-medium text-gray-500">
               <div className="flex justify-between">
-                <span>Items Gross Subtotal:</span>
+                <span>{t.itemsSubtotal}</span>
                 <span className="font-mono text-slate-900 font-bold">
-                  {activeRegion?.symbol || "$"}
-                  {itemsSubtotal.toFixed(2)}
+                  {formatPrice(itemsSubtotal)}
                 </span>
               </div>
               {activeDiscountRatio > 0 && (
                 <div className="flex justify-between text-emerald-600 font-semibold">
-                  <span>Campaign Markdown Deduction:</span>
+                  <span>{t.discountLabel}</span>
                   <span className="font-mono">
-                    -{activeRegion?.symbol || "$"}
-                    {discountDeduction.toFixed(2)}
+                    -{formatPrice(discountDeduction)}
                   </span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span>Cross-Border Freight Logistics:</span>
+                <span>{t.shippingLabel}</span>
                 <span className="font-mono text-slate-900 font-bold">
-                  {activeRegion?.symbol || "$"}
-                  {regionalFreightCost.toFixed(2)}
+                  {formatPrice(regionalFreightCost)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>
-                  Regional Statutory Customs Tax (
-                  {(activeRegion?.taxRate || 0) * 100}%):
+                  {t.taxLabel.replace("{n}", (activeRegion?.taxRate || 0) * 100)}
                 </span>
                 <span className="font-mono text-slate-900 font-bold">
-                  {activeRegion?.symbol || "$"}
-                  {computedRegionalTax.toFixed(2)}
+                  {formatPrice(computedRegionalTax)}
                 </span>
               </div>
               <hr className="border-gray-50 pt-1" />
               <div className="flex justify-between text-sm font-black text-slate-900">
-                <span>{t.totalEst || "Grand Total Amount:"}</span>
+                <span>{t.totalEst || "Total:"}</span>
                 <span className="font-mono text-emerald-600 text-base">
-                  {activeRegion?.symbol || "$"}
-                  {grandTotalSummaryAmount.toFixed(2)}
+                  {formatPrice(grandTotalSummaryAmount)}
                 </span>
               </div>
             </div>
@@ -438,8 +365,8 @@ export default function CheckoutPage() {
               }`}
             >
               {isProcessing
-                ? "Processing Secure Escrow Wire..."
-                : t.checkoutBtn || "Finalize & Clear Cargo Order"}
+                ? t.processingPayment
+                : t.checkoutBtn || t.payNow}
             </button>
           </div>
         </div>

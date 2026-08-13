@@ -3,10 +3,12 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppEngine } from "@/context/AppContext";
+import { useTranslationEngine } from "@/context/LanguageContext";
 
 export default function SecuritySignOutActionPage() {
   const router = useRouter();
   const { setUser, setOrderHistory, syncCart } = useAppEngine();
+  const { t } = useTranslationEngine();
 
   useEffect(() => {
     const executeSecureSessionPurge = async () => {
@@ -21,8 +23,8 @@ export default function SecuritySignOutActionPage() {
         if (typeof window !== "undefined") {
           localStorage.removeItem("MERKATO_CART");
           localStorage.removeItem("MERKATO_REGION");
-
-          localStorage.removeItem("MERKATO_AUTH_TOKEN");
+          localStorage.removeItem("MERKATO_TOKEN");
+          localStorage.removeItem("MERKATO_USER");
         }
 
         console.log("🔒 Account Identity Session Token Cleared Successfully.");
@@ -46,11 +48,10 @@ export default function SecuritySignOutActionPage() {
 
       <div className="space-y-1">
         <h2 className="text-sm font-black uppercase text-slate-900 font-mono tracking-wider">
-          Securing Your Session Teardown
+          {t.loggingOutTitle}
         </h2>
         <p className="text-xs text-gray-400 font-medium max-w-xs mx-auto leading-relaxed">
-          Wiping localized security configuration matrices and routing your
-          connection safely back onto the store timeline...
+          {t.loggingOutBody}
         </p>
       </div>
     </div>

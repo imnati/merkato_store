@@ -3,11 +3,21 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppEngine } from "@/context/AppContext";
+import { useTranslationEngine } from "@/context/LanguageContext";
 import api from "@/lib/axios";
 
 export default function AdminOrdersLogistics() {
   const { activeRegion } = useAppEngine();
+  const { t } = useTranslationEngine();
   const [activeOrdersList, setActiveOrdersList] = useState([]);
+
+  const STATUS_LABELS = {
+    "Pending Payment": t.stAwaitingPayment,
+    Processing: t.stPaidProcessing,
+    "In Transit": t.stInTransit,
+    "Delivered Complete": t.stDelivered,
+    "Cancelled / Refunded": t.stCancelled,
+  };
 
   useEffect(() => {
     api.get("/orders")
@@ -22,7 +32,7 @@ export default function AdminOrdersLogistics() {
         prev.map((o) => (o._id === id ? data : o))
       );
     } catch {
-      alert("Failed to update order status.");
+      alert(t.failedUpdateStatus);
     }
   };
 
@@ -33,18 +43,17 @@ export default function AdminOrdersLogistics() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 font-mono uppercase">
-              Fulfillment Logistics Router
+              {t.ordersTitle}
             </h1>
             <p className="text-xs text-gray-500 font-semibold mt-0.5">
-              Track shipping container dispatch vectors, calculate freight
-              statuses, and execute regional routing clearance overrides.
+              {t.ordersSub}
             </p>
           </div>
           <Link
             href="/admin"
             className="text-xs font-bold text-emerald-600 hover:underline font-mono bg-white border border-slate-200 px-3 py-2 rounded-xl shadow-sm"
           >
-            ← Operations Command Center
+            {t.backToDashboard}
           </Link>
         </div>
 
@@ -53,12 +62,12 @@ export default function AdminOrdersLogistics() {
           <table className="w-full border-collapse text-left text-xs font-medium min-w-[700px]">
             <thead>
               <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
-                <th className="p-3">Fulfillment ID Reference</th>
-                <th className="p-3">Buyer Profile & Destination</th>
-                <th className="p-3">Parcel Load Weights</th>
-                <th className="p-3 text-right">Invoiced Settlement Net</th>
-                <th className="p-3 text-center">Fulfillment State Pipeline</th>
-                <th className="p-3 text-right">Logistics Adjustment Actions</th>
+                <th className="p-3">{t.hOrderId}</th>
+                <th className="p-3">{t.hCustomer}</th>
+                <th className="p-3">{t.hItems}</th>
+                <th className="p-3 text-right">{t.hTotal}</th>
+                <th className="p-3 text-center">{t.hStatus}</th>
+                <th className="p-3 text-right">{t.hActions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-slate-700">
@@ -72,21 +81,21 @@ export default function AdminOrdersLogistics() {
                   </td>
                   <td className="p-3 font-semibold text-slate-500">
                     <p className="text-slate-900 font-extrabold">
-                      {order.buyer || order.user?.name || "Customer Account"}
+                      {order.buyer || order.user?.name || t.customerAccount}
                     </p>
                     <p className="text-[10px] text-gray-400 font-bold font-mono mt-0.5 uppercase">
-                      Hub:{" "}
-                      {order.destination ||
-                        order.zone ||
-                        "Pan-African Terminal"}
+                      {t.deliverTo}:{" "}
+                      {order.destination || order.zone || t.awaitingDetails}
                     </p>
                   </td>
                   <td className="p-3 font-semibold text-slate-800">
                     <p className="line-clamp-1">
-                      {order.summary || order.item}
+                      {Array.isArray(order.items) && order.items.length > 0
+                        ? order.items.map((i) => `${i.name} x${i.quantity}`).join(", ")
+                        : order.summary || order.item || "—"}
                     </p>
                     <p className="text-[10px] text-gray-400 font-mono italic">
-                      Carrier: {order.courier || "Regional Air Freight"}
+                      {t.shippingLabel} {order.courier || "Regional air freight"}
                     </p>
                   </td>
                   <td className="p-3 text-right font-mono font-black text-emerald-600">
@@ -97,16 +106,18 @@ export default function AdminOrdersLogistics() {
                   <td className="p-3 text-center whitespace-nowrap">
                     <span
                       className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${
-                        order.status === "Processing"
-                          ? "bg-amber-50 text-amber-700 border-amber-100"
-                          : order.status === "In Transit"
-                            ? "bg-blue-50 text-blue-700 border-blue-100"
-                            : order.status === "Cancelled / Refunded"
-                              ? "bg-red-50 text-red-700 border-red-100"
-                              : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                        order.status === "Pending Payment"
+                          ? "bg-slate-100 text-slate-600 border-slate-200"
+                          : order.status === "Processing"
+                            ? "bg-amber-50 text-amber-700 border-amber-100"
+                            : order.status === "In Transit"
+                              ? "bg-blue-50 text-blue-700 border-blue-100"
+                              : order.status === "Cancelled / Refunded"
+                                ? "bg-red-50 text-red-700 border-red-100"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
                       }`}
                     >
-                      {order.status}
+                      {STATUS_LABELS[order.status] || order.status}
                     </span>
                   </td>
                   <td className="p-3 text-right whitespace-nowrap space-x-2">
@@ -124,7 +135,7 @@ export default function AdminOrdersLogistics() {
                               : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
                           }`}
                         >
-                          Dispatch Route
+                          {t.approveShip}
                         </button>
                         <button
                           onClick={() =>
@@ -135,7 +146,7 @@ export default function AdminOrdersLogistics() {
                           }
                           className="text-emerald-700 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 text-[11px] font-bold px-2.5 py-1 rounded-lg transition active:scale-95"
                         >
-                          Clear Handover
+                          {t.markDelivered}
                         </button>
                         <button
                           onClick={() =>
@@ -146,12 +157,12 @@ export default function AdminOrdersLogistics() {
                           }
                           className="text-red-500 hover:text-red-700 font-bold text-[11px] transition pl-1"
                         >
-                          Cancel
+                          {t.cancel}
                         </button>
                       </>
                     ) : (
                       <span className="text-gray-400 font-mono tracking-tight italic text-[11px]">
-                        Ledger Closed
+                        {t.completed}
                       </span>
                     )}
                   </td>
@@ -159,6 +170,11 @@ export default function AdminOrdersLogistics() {
               ))}
             </tbody>
           </table>
+          {activeOrdersList.length === 0 && (
+            <p className="text-xs text-gray-400 font-medium text-center py-8">
+              {t.noOrders}
+            </p>
+          )}
         </div>
       </div>
     </div>

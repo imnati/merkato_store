@@ -1,177 +1,234 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAppEngine } from "@/context/AppContext";
+import { useTranslationEngine } from "@/context/LanguageContext";
+import api from "@/lib/axios";
 
 export default function AdminBICommandCenter() {
+  const { t } = useTranslationEngine();
   const [timeframe, setTimeframe] = useState("24h");
+  const { products } = useAppEngine();
 
-  const BI_TELEMETRY = {
-    totalRevenueUSD: 142450.0,
-    dailySalesCount: 342,
-    activeHourlySessions: 2450,
-    conversionRatio: 3.4,
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const STATUS_LABELS = {
+    "Pending Payment": t.stAwaitingPayment,
+    Processing: t.stPaidProcessing,
+    "In Transit": t.stInTransit,
+    "Delivered Complete": t.stDelivered,
+    "Cancelled / Refunded": t.stCancelled,
   };
 
-  const CUSTOMER_ACTIVITY_STREAM = [
-    {
-      id: "act-1",
-      timestamp: "15:42",
-      name: "Solomom",
-      code: "AE",
-      label: "Completed Checkout",
-      details: "Cleared order ref MK-710492 (Value: AED 145.00)",
-    },
-    {
-      id: "act-2",
-      timestamp: "15:35",
-      name: "Abebe ",
-      code: "ET",
-      label: "Submitted Review",
-      details: "Assigned 5-star rating matrix index to wireless headphones",
-    },
-    {
-      id: "act-3",
-      timestamp: "15:14",
-      name: "Yisak",
-      code: "NG",
-      label: "Profile Registration",
-      details: "Provisioned new customer secure profile parameters array",
-    },
-  ];
+  useEffect(() => {
+    const loadTelemetry = async () => {
+      try {
+        const { data } = await api.get("/orders");
+        setOrders(Array.isArray(data) ? data : []);
+      } catch {
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTelemetry();
+  }, []);
+
+  const settledOrders = orders.filter((o) => o.status !== "Cancelled / Refunded");
+  const totalRevenueUSD = settledOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const statusCounts = orders.reduce((acc, o) => {
+    acc[o.status || "Pending Payment"] = (acc[o.status || "Pending Payment"] || 0) + 1;
+    return acc;
+  }, {});
+  const lowStockItems = (products || []).filter(
+    (p) => (p.stockQuantity ?? p.stock ?? 0) <= 5,
+  ).length;
+  const catalogVolume = (products || []).length;
+  const activeOrders = orders.filter(
+    (o) => !["Delivered Complete", "Cancelled / Refunded"].includes(o.status),
+  ).length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 text-slate-800 space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 font-mono uppercase">
-            BI Command Center
+            {t.adminDashboard}
           </h1>
           <p className="text-xs text-gray-500 font-semibold mt-0.5">
-            Real-time system business intelligence reporting metrics across
-            regional hubs operations.
+            {t.adminOverview}
           </p>
         </div>
 
-        <select
-          value={timeframe}
-          onChange={(e) => setTimeframe(e.target.value)}
-          className="bg-gray-100 border border-gray-200 text-xs font-bold rounded-xl p-2.5 text-gray-700 focus:outline-none cursor-pointer"
-        >
-          <option value="24h">Sync: Last 24 Hours</option>
-          <option value="7d">Sync: Last 7 Days</option>
-          <option value="30d">Sync: Last 30 Days</option>
-        </select>
+<div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="text-xs font-bold text-emerald-600 hover:underline font-mono bg-white border border-slate-200 px-3 py-2 rounded-xl shadow-sm"
+            >
+              {t.backToStore}
+            </Link>
+            <select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="bg-gray-100 border border-gray-200 text-xs font-bold rounded-xl p-2.5 text-gray-700 focus:outline-none cursor-pointer"
+            >
+          <option value="24h">{t.last24h}</option>
+          <option value="7d">{t.last7d}</option>
+          <option value="30d">{t.last30d}</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
           <span className="text-gray-400 uppercase font-bold text-[9px] tracking-wider block">
-            Total Gross Revenue
+            {t.totalRevenue}
           </span>
           <p className="text-2xl font-black text-slate-900 font-mono">
-            USD ${BI_TELEMETRY.totalRevenueUSD.toLocaleString()}
+            USD ${totalRevenueUSD.toLocaleString()}
           </p>
           <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-bold font-mono">
-            +14.2% MoM
+            {settledOrders.length} {t.paidOrders}
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
           <span className="text-gray-400 uppercase font-bold text-[9px] tracking-wider block">
-            Daily Sales Volume
+            {t.activeOrders}
           </span>
           <p className="text-2xl font-black text-slate-900 font-mono">
-            {BI_TELEMETRY.dailySalesCount} Units
+            {activeOrders}
           </p>
           <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-bold font-mono">
-            +8.5% Daily
+            {orders.length} {t.totalShort}
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
           <span className="text-gray-400 uppercase font-bold text-[9px] tracking-wider block">
-            Concurrent Sockets
+            {t.lowStock}
           </span>
-          <p className="text-2xl font-black text-emerald-600 font-mono animate-pulse">
-            {BI_TELEMETRY.activeHourlySessions} Active
+          <p className="text-2xl font-black text-amber-600 font-mono">
+            {lowStockItems} {t.items}
           </p>
-          <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-bold font-mono">
-            Live Stream
+          <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold font-mono">
+            {loading ? t.loadingProducts : t.needsReplenishment}
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
           <span className="text-gray-400 uppercase font-bold text-[9px] tracking-wider block">
-            Conversion Efficiency
+            {t.productsTitle}
           </span>
           <p className="text-2xl font-black text-slate-900 font-mono">
-            {BI_TELEMETRY.conversionRatio}% Rate
+            {catalogVolume}
           </p>
           <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-bold font-mono">
-            SLA Optimal
+            {t.inCatalog}
           </span>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-wrap gap-3 items-center justify-between">
-        <span className="text-xs font-extrabold font-mono uppercase text-gray-400">
-          Logistical Control Sub-Desks:
-        </span>
-        <div className="flex gap-2 text-[11px] font-bold font-mono">
-          <Link
-            href="/admin/products"
-            className="bg-[#0B1528] hover:bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm transition"
-          >
-            📁 Products Catalog CRUD
-          </Link>
-          <Link
-            href="/admin/orders"
-            className="bg-[#0B1528] hover:bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm transition"
-          >
-            🚚 Logistics Package Router
-          </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-3">
+          <h3 className="text-sm font-black uppercase text-slate-800 font-mono border-b border-gray-50 pb-2">
+            {t.statusDistribution}
+          </h3>
+          {loading ? (
+            <p className="text-xs text-gray-400 font-medium">
+              {t.loadingRecentOrders}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {Object.entries(statusCounts).map(([status, count]) => (
+                <div
+                  key={status}
+                  className="flex items-center justify-between text-xs font-bold"
+                >
+                  <span className="text-slate-600">{STATUS_LABELS[status] || status}</span>
+                  <span className="font-mono font-black text-slate-900">
+                    {count}
+                  </span>
+                </div>
+              ))}
+              {orders.length === 0 && (
+                <p className="text-xs text-gray-400 font-medium">
+                  {t.noOrders}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-wrap gap-3 items-center justify-between">
+          <span className="text-xs font-extrabold font-mono uppercase text-gray-400">
+            {t.quickActions}
+          </span>
+          <div className="flex gap-2 text-[11px] font-bold font-mono">
+            <Link
+              href="/admin/products"
+              className="bg-[#0B1528] hover:bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm transition"
+            >
+              {t.manageProducts}
+            </Link>
+            <Link
+              href="/admin/orders"
+              className="bg-[#0B1528] hover:bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm transition"
+            >
+              {t.manageOrders}
+            </Link>
+          </div>
         </div>
       </div>
 
       <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
         <div className="border-b border-gray-50 pb-2">
           <h3 className="text-sm font-black uppercase text-slate-800 font-mono">
-            ⏱️ Live Customer Activity Telemetry Logs
+            {t.recentOrders}
           </h3>
           <p className="text-xs text-gray-400 font-medium">
-            Real-time trail capture monitoring client checkouts and state
-            mutations cross-border.
+            {t.recentOrdersSub}
           </p>
         </div>
 
         <div className="space-y-3">
-          {CUSTOMER_ACTIVITY_STREAM.map((log) => (
+          {loading && (
+            <p className="text-xs text-gray-400 font-medium">
+              {t.loadingRecentOrders}
+            </p>
+          )}
+          {orders.slice(-6).reverse().map((order) => (
             <div
-              key={log.id}
+              key={order._id}
               className="text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between border border-slate-50 bg-slate-50/50 p-4 rounded-xl gap-2 hover:bg-slate-50 transition-colors"
             >
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="bg-slate-900 text-white font-mono text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
-                    {log.code}
-                  </span>
-                  <span className="text-slate-900 font-extrabold">
-                    {log.name}
+                    {order._id}
                   </span>
                   <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono font-bold text-[9px] uppercase tracking-wide">
-                    {log.label}
+                    {STATUS_LABELS[order.status] || order.status || "Pending Payment"}
                   </span>
                 </div>
                 <p className="text-gray-500 font-medium text-[11px]">
-                  {log.details}
+                  {order.items?.length || 0} {t.items} • $
+                  {(order.total || 0).toLocaleString()} •{" "}
+                  {order.destination || t.destinationPending}
                 </p>
               </div>
               <span className="text-gray-400 font-mono font-normal text-[10px] whitespace-nowrap text-right">
-                {log.timestamp}
+                {new Date(order.createdAt).toLocaleString()}
               </span>
             </div>
           ))}
+          {!loading && orders.length === 0 && (
+            <p className="text-xs text-gray-400 font-medium">
+              {t.noOrders}
+            </p>
+          )}
         </div>
       </div>
     </div>
