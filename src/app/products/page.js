@@ -62,9 +62,9 @@ function CatalogGridContent() {
               {t.emptySearch || t.emptyCategory}
             </div>
           ) : (
-            filtered.map((p) => (
+            filtered.map((p, index) => (
               <ProductCard
-                key={p.id}
+                key={p._id || p.id || index}
                 product={p}
                 onAddToCart={addToCart}
                 onToggleWishlist={(product) => {

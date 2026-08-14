@@ -187,11 +187,11 @@ export default function CheckoutPage() {
               </div>
             ) : (
               <div className="space-y-4 divide-y divide-gray-50">
-                {cart.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-4 pt-4 first:pt-0 text-xs font-medium"
-                  >
+                 {cart.map((item) => (
+                   <div
+                     key={item._id || item.id}
+                     className="flex items-center justify-between gap-4 pt-4 first:pt-0 text-xs font-medium"
+                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="bg-slate-50 w-12 h-12 rounded-xl border border-gray-100 shrink-0 overflow-hidden">
                         {item.images?.[0] ? (

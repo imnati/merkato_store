@@ -15,7 +15,9 @@ export default function EfficientSearchInput({
 
   useEffect(() => {
     const delay = setTimeout(() => {
-      searchCallbackRef.current(term);
+      if (term) {
+        searchCallbackRef.current(term);
+      }
     }, 350);
 
     return () => clearTimeout(delay);

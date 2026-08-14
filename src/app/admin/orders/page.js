@@ -97,7 +97,7 @@ export default function AdminOrdersLogistics() {
             <tbody className="divide-y divide-gray-50 text-slate-700">
               {activeOrdersList.map((order) => (
                 <tr
-                  key={order.id}
+                  key={order._id || order.id}
                   className="hover:bg-slate-50/40 transition-colors"
                 >
                   <td className="p-3 font-mono font-bold text-slate-900">

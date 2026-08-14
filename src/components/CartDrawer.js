@@ -47,7 +47,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 ) : (
                   cart.map((item) => (
                     <div
-                      key={item.id}
+                      key={item._id || item.id}
                       className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl"
                     >
                       <div className="bg-white w-10 h-10 rounded-lg border border-gray-100 shrink-0 overflow-hidden">
@@ -108,6 +108,13 @@ export default function CartDrawer({ isOpen, onClose }) {
 
               {cart.length > 0 && (
                 <div className="p-4 border-t border-gray-100 space-y-3">
+                  <Link
+                    href="/cart"
+                    onClick={onClose}
+                    className="w-full text-center block bg-slate-900 hover:bg-slate-800 text-white text-xs font-black py-3.5 rounded-xl uppercase tracking-wider font-mono shadow transition-all active:scale-[0.99]"
+                  >
+                    View Cart
+                  </Link>
                   <div className="flex items-baseline justify-between text-xs font-black text-slate-900">
                     <span>{t.totalEst || "Total"}:</span>
                     <span className="text-emerald-600 font-mono text-sm">

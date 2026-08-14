@@ -49,7 +49,7 @@ function CartPageContent() {
             <div className="lg:col-span-2 space-y-4">
               {cart.map((item) => (
                 <div
-                  key={item.id}
+                  key={item._id || item.id}
                   className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4"
                 >
                   <div className="bg-slate-50 w-16 h-16 rounded-xl border border-gray-100 shrink-0 overflow-hidden">

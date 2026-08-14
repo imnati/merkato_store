@@ -131,9 +131,9 @@ function HomepageContent() {
                   : t.emptyHomeCategory.replace("{category}", activeCategory)}
               </div>
             ) : (
-              processedFilteredProducts.map((p) => (
+              processedFilteredProducts.map((p, index) => (
                 <ProductCard
-                  key={p.id}
+                  key={p._id || p.id || index}
                   product={p}
                   onAddToCart={addToCart}
                   onToggleWishlist={(product) => {
@@ -166,7 +166,7 @@ function HomepageContent() {
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-gray-50 custom-scrollbar text-xs">
                   {cart.map((item) => (
                     <div
-                      key={item.id}
+                      key={item._id || item.id}
                       className="flex items-center justify-between font-semibold pt-3 first:pt-0 gap-2"
                     >
                       <div className="min-w-0 flex-1">
@@ -232,6 +232,12 @@ function HomepageContent() {
                   </span>
                 </div>
 
+                <Link
+                  href="/cart"
+                  className="w-full text-center block bg-slate-900 hover:bg-slate-800 text-white text-xs font-black py-3.5 rounded-xl uppercase tracking-wider font-mono shadow transition-all active:scale-[0.99]"
+                >
+                  View Cart
+                </Link>
                 <Link
                   href="/checkout"
                   className="w-full text-center block bg-orange-600 hover:bg-orange-700 text-white text-xs font-black py-3.5 rounded-xl uppercase tracking-wider font-mono shadow transition-all active:scale-[0.99]"

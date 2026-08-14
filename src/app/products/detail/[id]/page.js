@@ -13,7 +13,7 @@ export default function SpecificationsDesk() {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [imgError, setImgError] = useState(false);
 
-  const product = products.find((p) => p.id === id) || products[0];
+  const product = products.find((p) => p.id === id || p._id === id) || products[0];
 
   const isOutOfStock = product?.status?.toLowerCase() === "out of stock";
 

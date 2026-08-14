@@ -40,11 +40,14 @@ export default function LoginPage() {
     try {
       const data = await authApi.login(identityEmail, credentialPassword);
       login(data, data.token);
-      toast.success("Authentication Complete! Signed access token mapped securely onto active profile environment.");
+      toast.success(
+        "Authentication Complete! Signed access token mapped securely onto active profile environment.",
+      );
       router.push("/");
     } catch (err) {
       setErrorStatusMessage(
-        err.message || "Access Denied: Invalid security signature credentials matching parameters array.",
+        err.message ||
+          "Access Denied: Invalid security signature credentials matching parameters array.",
       );
     } finally {
       setIsAuthenticating(false);
@@ -87,7 +90,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Secure Credential Password
+              Password
             </label>
             <input
               type="password"
@@ -131,7 +134,7 @@ export default function LoginPage() {
                   <span>Verifying Encrypted Signature Token...</span>
                 </>
               ) : (
-                "Authorize Account Session"
+                "Log In"
               )}
             </button>
           </div>
@@ -143,7 +146,7 @@ export default function LoginPage() {
               href="/auth/forgot-password"
               className="text-orange-500 hover:text-orange-600 hover:underline transition"
             >
-              Forgot Access Token / Password?
+              Forgot Password?
             </Link>
           </div>
           <div className="text-gray-400 font-medium">
@@ -152,7 +155,7 @@ export default function LoginPage() {
               href="/auth/register"
               className="text-slate-800 hover:text-slate-900 hover:underline transition font-bold"
             >
-              Register Entry Node
+              Register
             </Link>
           </div>
         </div>

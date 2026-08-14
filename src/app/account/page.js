@@ -154,7 +154,7 @@ export default function AccountDashboardPage() {
               </h3>
               {activeOrdersQueue.map((order) => (
                 <div
-                  key={order.id}
+                  key={order._id || order.id}
                   className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/50 text-xs font-semibold"
                 >
                   <div className="flex flex-wrap justify-between items-center gap-2 bg-white p-3 rounded-lg border border-gray-100">
@@ -256,7 +256,7 @@ export default function AccountDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold">
                 {wishlist.map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id || item.id}
                     className="border border-gray-100 bg-gray-50/50 rounded-xl p-3 flex items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-2 min-w-0">

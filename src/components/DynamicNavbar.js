@@ -24,10 +24,11 @@ export default function DynamicNavbar() {
     const params = new URLSearchParams(searchParams.toString());
     if (term) {
       params.set("search", term);
-    } else {
+      router.push(`/?${params.toString()}`);
+    } else if (params.has("search")) {
       params.delete("search");
+      router.push(`/?${params.toString()}`);
     }
-    router.push(`/?${params.toString()}`);
   };
 
   return (

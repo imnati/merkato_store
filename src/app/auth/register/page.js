@@ -64,12 +64,18 @@ export default function RegisterPage() {
     }
 
     try {
-      const data = await authApi.register(fullName, identityEmail, securePassword, []);
+      const data = await authApi.register(
+        fullName,
+        identityEmail,
+        securePassword,
+        [],
+      );
       login(data, data.token);
       setSuccessStatus(true);
     } catch (err) {
       setErrorStatus(
-        err.message || "Connection timeout to the registration pipeline routing gateway.",
+        err.message ||
+          "Connection timeout to the registration pipeline routing gateway.",
       );
     } finally {
       setIsProvisioning(false);
@@ -114,17 +120,16 @@ export default function RegisterPage() {
             Configure profile constants to log a regional marketplace entry.
           </p>
         </div>
-        
+
         {errorStatus && (
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-xs p-3.5 rounded-xl font-semibold leading-relaxed">
             ⚠️ {errorStatus}
           </div>
         )}
         <form className="space-y-4" onSubmit={handleOnboardingSubmit}>
-          
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Full Identity Name
+              Full Name
             </label>
             <input
               type="text"
@@ -135,10 +140,10 @@ export default function RegisterPage() {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">
-              Account Email Address
+              Email Address
             </label>
             <input
               type="email"
@@ -226,7 +231,7 @@ export default function RegisterPage() {
                   <span>Provisioning Cloud Identity Node...</span>
                 </>
               ) : (
-                "Instantiate Profile"
+                "Register"
               )}
             </button>
           </div>

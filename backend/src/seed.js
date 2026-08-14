@@ -1,3 +1,5 @@
+require("dotenv").config({ path: require("path").resolve(__dirname, "../\.env") });
+const mongoose = require("mongoose");
 const Product = require("./models/Product");
 const User = require("./models/User");
 
@@ -17,6 +19,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 50,
     },
     {
       id: "p2",
@@ -32,6 +35,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400&h=400&fit=crop&auto=format",
       ],
       status: "Low Stock",
+      stockQuantity: 5,
     },
     {
       id: "p3",
@@ -47,6 +51,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 30,
     },
     {
       id: "p6",
@@ -62,6 +67,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 25,
     },
     {
       id: "p4",
@@ -77,6 +83,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 100,
     },
     {
       id: "p7",
@@ -92,6 +99,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 75,
     },
     {
       id: "p5",
@@ -107,6 +115,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1570194065650-d99fb4b38d7b?w=400&h=400&fit=crop&auto=format",
       ],
       status: "Out of Stock",
+      stockQuantity: 0,
     },
     {
       id: "p8",
@@ -122,6 +131,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1620916566398-39f1143ab7de?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 40,
     },
     {
       id: "p9",
@@ -137,6 +147,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 15,
     },
     {
       id: "p10",
@@ -152,6 +163,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 60,
     },
     {
       id: "p11",
@@ -167,6 +179,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1546868871-af0de0ae72be?w=400&h=400&fit=crop&auto=format",
       ],
       status: "Low Stock",
+      stockQuantity: 8,
     },
     {
       id: "p12",
@@ -182,6 +195,7 @@ const seedProducts = async () => {
         "https://images.unsplash.com/photo-1577803645773-f96470509666?w=400&h=400&fit=crop&auto=format",
       ],
       status: "In Stock",
+      stockQuantity: 45,
     },
   ];
 
@@ -219,3 +233,9 @@ const seed = async () => {
 };
 
 module.exports = { seed };
+
+if (require.main === module) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => seed())
+    .catch((err) => { console.error(err); process.exit(1); });
+}

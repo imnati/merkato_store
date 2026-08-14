@@ -221,9 +221,9 @@ export default function AdminProductsDesk() {
             <tbody className="divide-y divide-gray-50 text-slate-700">
               {/* 🛠️ MODIFIED: products ዝርዝር ባዶ ቢሆንም እንኳ እንዳይከሽፍ በ Optional Chaining ተጠብቋል */}
               {products && products.length > 0 ? (
-                products.map((product) => (
+                products.map((product, index) => (
                   <tr
-                    key={product.id}
+                    key={product._id || product.id || index}
                     className="hover:bg-slate-50/40 transition-colors"
                   >
                     <td className="p-3">

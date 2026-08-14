@@ -11,6 +11,8 @@ export default function ProductCard({ product, onAddToCart, symbol, onToggleWish
   const { id, name, brand, price, discountPrice, sku, images, status } =
     product;
 
+  const safeId = id || product._id;
+
   const isOutOfStock = status?.toLowerCase() === "out of stock";
 
   const fallbackImage =
@@ -76,7 +78,7 @@ export default function ProductCard({ product, onAddToCart, symbol, onToggleWish
           SKU: {sku || "MK-GEN-000"} | {brand || "Generic"}
         </p>
         <Link
-          href={`/products/detail/${id}`}
+          href={`/products/detail/${safeId}`}
           className="text-xs font-bold text-slate-800 line-clamp-2 hover:text-emerald-600 transition-colors"
         >
           {name}
